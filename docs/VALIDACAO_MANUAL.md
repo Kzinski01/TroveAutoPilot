@@ -6,6 +6,9 @@ telemetria sem iniciar automação.
 
 1. Em um Windows limpo, extraia a pasta completa do ZIP e abra o executável.
    Confirme WebView2, tela inicial e ausência de seleção automática de handles antigos.
+   Use uma cópia baixada pelo navegador e extraída pelo Explorador, mantendo
+   `TroveAutoBot.exe.config` junto do EXE. A aplicação deve abrir mesmo quando
+   as DLLs recebem `Zone.Identifier` com `ZoneId=3`.
 2. Abra dois processos do jogo. Confirme que os seletores listam PIDs diferentes
    e que selecionar o mesmo processo nos dois controles é recusado.
 3. No Jogo 1, teste auto clique e skills em Compatibilidade. Tire o foco:

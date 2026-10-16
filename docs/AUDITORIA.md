@@ -11,6 +11,17 @@ não deveria ser enviada inteira: continha configurações pessoais, logs, backu
 e binários antigos, sem `.gitignore`, licença ou CI. Não havia repositório Git
 local; o destino informado pelo mantenedor estava vazio.
 
+**Correção posterior de distribuição (16/10/2026):** o primeiro ZIP passava no
+selftest local, mas falhava depois de baixado e extraído pelo Explorador. A DLL
+`Python.Runtime.dll` recebeu `Zone.Identifier` com `ZoneId=3`; seus bytes eram
+idênticos aos publicados. O teste inicial não cobria esse metadado NTFS.
+Foi adicionado `TroveAutoBot.exe.config` ao lado do EXE, com
+`loadFromRemoteSources` habilitado apenas para o CLR desse aplicativo. A DLL
+continua marcada como download. O build e a CI agora exigem extração isolada,
+marcação dos arquivos e selftest de CSS, ponte e telemetria antes da release.
+Fontes: [Microsoft](https://learn.microsoft.com/en-us/dotnet/framework/configure-apps/file-schema/runtime/loadfromremotesources-element)
+e [relato do PyInstaller](https://github.com/pyinstaller/pyinstaller/issues/8294).
+
 Os bloqueios de publicação do código e os defeitos reproduzidos foram tratados.
 Isso **não certifica funcionamento integral no Trove**: não foi feita uma sessão
 com dois processos reais nem teste prolongado no jogo nesta auditoria. A aceitação
@@ -74,7 +85,7 @@ Fontes consultadas:
 | Verificação | Resultado |
 |---|---|
 | Suíte inicial | 278 testes passaram |
-| Suíte final, incluindo regressões | 290 testes passaram |
+| Suíte final, incluindo regressões e configuração CLR | 292 testes passaram |
 | Instalação isolada Windows/Python 3.14 | Lockfile instalado e suíte aprovada |
 | Ruff, incluindo testes | Sem erros |
 | ESLint, sem warnings permitidos | Aprovado |

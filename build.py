@@ -16,6 +16,13 @@ UI_DIR = os.path.join(BASE_DIR, "ui")
 UI_OUT = os.path.join(UI_DIR, "out")
 ASSETS = os.path.join(BASE_DIR, "assets")
 NAME = "TroveAutoBot"
+RUNTIME_CONFIG = NAME + ".exe.config"
+
+
+def copy_runtime_config(application):
+    """Configure this executable's CLR to load its downloaded bundled DLLs."""
+    shutil.copyfile(os.path.join(ASSETS, RUNTIME_CONFIG),
+                    os.path.join(application, RUNTIME_CONFIG))
 
 
 def pyinstaller_options(icon, splash):
@@ -109,6 +116,7 @@ def _package(icon, splash):
     if not os.path.exists(os.path.join(app_dir, NAME + ".exe")):
         print("Build terminou mas o exe nao foi encontrado.")
         return None
+    copy_runtime_config(app_dir)
     return app_dir
 
 

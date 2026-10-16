@@ -38,3 +38,5 @@ jobs:
         continue-on-error: true
       - run: npm run build
         working-directory: ui
+      - name: Package and test downloaded Windows release
+        run: python build_release.py --skip-ui --output-dir release-audit/ci

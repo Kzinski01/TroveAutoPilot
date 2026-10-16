@@ -92,6 +92,15 @@ python build_release.py --skip-ui --output-dir release-audit
 
 O pacote é uma **pasta**, não um executável isolado: mantenha `_internal` ao lado de `TroveAutoBot.exe`. O build gera configuração limpa, ZIP e SHA-256, inclui licenças e recusa sobrescrever uma distribuição anterior. Para um build comum, use `python build.py`.
 
+Mantenha também **`TroveAutoBot.exe.config` ao lado do EXE**. Esse arquivo configura
+o carregador .NET do aplicativo para aceitar suas DLLs locais quando o Windows
+as marca como baixadas da internet. Sem ele, uma extração pelo Explorador pode
+falhar com `Failed to resolve Python.Runtime.Loader.Initialize`.
+
+O build de release agora extrai o ZIP em uma pasta temporária, adiciona a marca
+de download (`ZoneId=3`) aos arquivos e exige um selftest aprovado. Para repetir:
+`python release_smoke.py 'release-audit/Build Final.zip'`.
+
 A verificação `TroveAutoBot.exe --selftest` carrega a interface e a telemetria sem iniciar rotinas ou registrar atalhos de jogo. Não valida a aceitação de input pelo Trove. [Roteiro de teste com duas instâncias](docs/VALIDACAO_MANUAL.md).
 
 ## Arquitetura e segurança

@@ -61,9 +61,9 @@ def prepare_distribution(application, destination):
     application, destination = Path(application), Path(destination)
     if destination.exists():
         raise FileExistsError(f"Destino já existe; preserve ou mova antes: {destination}")
-    required = {"TroveAutoBot.exe", "_internal"}
+    required = {"TroveAutoBot.exe", "_internal", build.RUNTIME_CONFIG}
     if {path.name for path in application.iterdir()} != required:
-        raise ValueError("A saída do PyInstaller precisa conter somente EXE e _internal")
+        raise ValueError("Saída do PyInstaller inesperada: exigidos EXE, configuração CLR e _internal")
     shutil.copytree(application, destination)
     (destination / "config.json").write_text(
         json.dumps(distribution_config(), ensure_ascii=False, indent=2, allow_nan=False),
@@ -73,8 +73,12 @@ def prepare_distribution(application, destination):
 
 def verify_distribution(destination):
     destination = Path(destination)
-    if {path.name for path in destination.iterdir()} != {"TroveAutoBot.exe", "_internal", "config.json"}:
+    if {path.name for path in destination.iterdir()} != {
+            "TroveAutoBot.exe", "_internal", "config.json", build.RUNTIME_CONFIG}:
         raise ValueError("Arquivo inesperado na distribuição")
+    runtime_config = destination / build.RUNTIME_CONFIG
+    if runtime_config.read_bytes() != (ROOT / "assets" / build.RUNTIME_CONFIG).read_bytes():
+        raise ValueError("Configuração CLR ausente ou divergente")
     settings = json.loads((destination / "config.json").read_text(encoding="utf-8"))
     if settings != distribution_config():
         raise ValueError("A distribuição contém ajustes locais ou inesperados")
@@ -126,10 +130,13 @@ def main():
                 "--workpath", str(ROOT / "build/final-package/work"),
                 "--specpath", str(ROOT / "build/final-package/spec"), str(ROOT / "main.py")]
     subprocess.run(command, cwd=ROOT, check=True)
+    build.copy_runtime_config(ROOT / "build/final-package/dist/TroveAutoBot")
     collect_licenses(ROOT / "build/final-package/dist/TroveAutoBot")
     output.mkdir(parents=True, exist_ok=True)
     prepare_distribution(ROOT / "build/final-package/dist/TroveAutoBot", destination)
     digest = create_archive(destination, archive)
+    from release_smoke import validate_archive
+    validate_archive(archive)
     print(f"Pasta: {destination}\nZIP: {archive}\nSHA256: {digest}")
 
 

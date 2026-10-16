@@ -9,6 +9,7 @@ from unittest import mock
 from zipfile import ZipFile
 
 import build_release
+import build
 import main
 
 
@@ -20,6 +21,7 @@ class ReleaseTest(unittest.TestCase):
         self.app = self.root / "application"
         self.app.mkdir()
         (self.app / "TroveAutoBot.exe").write_bytes(b"test-payload")
+        build.copy_runtime_config(self.app)
         files = ["ui/out/index.html", "assets/skill-bar-reference.png",
                  f"python{sys.version_info.major}{sys.version_info.minor}.dll"]
         for name in files:
@@ -45,7 +47,7 @@ class ReleaseTest(unittest.TestCase):
         with ZipFile(archive) as zipped:
             self.assertIsNone(zipped.testzip())
             top = {name.split("/")[1] for name in zipped.namelist()}
-            self.assertEqual(top, {"TroveAutoBot.exe", "_internal", "config.json"})
+            self.assertEqual(top, {"TroveAutoBot.exe", "_internal", "config.json", build.RUNTIME_CONFIG})
             saved = json.loads(zipped.read("Build Final/config.json"))
             self.assertEqual(saved, build_release.distribution_config())
 
@@ -67,6 +69,18 @@ class ReleaseTest(unittest.TestCase):
         build_release.prepare_distribution(self.app, self.destination)
         (self.destination / "_internal/ui/out/index.html").unlink()
         with self.assertRaises(ValueError):
+            build_release.verify_distribution(self.destination)
+
+    def test_missing_clr_config_is_rejected_before_distribution(self):
+        (self.app / build.RUNTIME_CONFIG).unlink()
+        with self.assertRaises(ValueError):
+            build_release.prepare_distribution(self.app, self.destination)
+        self.assertFalse(self.destination.exists())
+
+    def test_modified_clr_config_is_rejected(self):
+        build_release.prepare_distribution(self.app, self.destination)
+        (self.destination / build.RUNTIME_CONFIG).write_text("<configuration />")
+        with self.assertRaisesRegex(ValueError, "Configuração CLR"):
             build_release.verify_distribution(self.destination)
 
 
