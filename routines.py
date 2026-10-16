@@ -327,4 +327,3 @@ class DialogRoutine:
             image = vision.load_template(path)
             self._templates[name] = (path, image)
             return image
-
