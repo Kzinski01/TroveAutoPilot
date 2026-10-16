@@ -6,7 +6,7 @@ mss==10.2.0
 numpy==2.5.0
 opencv-python==4.13.0.92
 proxy_tools==0.1.0
-pycparser==3.0
+pycparser==3.11
 pynput==1.8.2
 pythonnet==3.1.0
 pywebview==6.2.1
