@@ -1,0 +1,142 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@font-face {
+  font-family: 'Geist';
+  src: url('/fonts/geist/Geist-Regular.ttf') format('truetype');
+  font-weight: 400;
+  font-display: swap;
+}
+@font-face {
+  font-family: 'Geist';
+  src: url('/fonts/geist/Geist-Medium.ttf') format('truetype');
+  font-weight: 500;
+  font-display: swap;
+}
+@font-face {
+  font-family: 'Geist';
+  src: url('/fonts/geist/Geist-SemiBold.ttf') format('truetype');
+  font-weight: 600;
+  font-display: swap;
+}
+@font-face {
+  font-family: 'Geist';
+  src: url('/fonts/geist/Geist-Bold.ttf') format('truetype');
+  font-weight: 700;
+  font-display: swap;
+}
+
+@layer base {
+  /* Midnight Galaxy: local type, deep purple surfaces and lavender controls. */
+  :root {
+    --background: 260 29% 10%;
+    --foreground: 240 67% 94%;
+    --card: 264 32% 14%;
+    --card-foreground: 240 67% 94%;
+    --popover: 262 29% 11%;
+    --popover-foreground: 240 67% 94%;
+    --primary: 264 29% 66%;
+    --primary-foreground: 264 35% 12%;
+    --secondary: 264 26% 21%;
+    --secondary-foreground: 240 67% 94%;
+    --muted: 264 26% 21%;
+    --muted-foreground: 264 20% 72%;
+    --accent: 264 26% 25%;
+    --accent-foreground: 240 67% 94%;
+    --destructive: 0 72% 51%;
+    --destructive-foreground: 0 0% 98%;
+    --border: 264 20% 25%;
+    --input: 264 26% 21%;
+    --ring: 264 29% 66%;
+    --radius: 0.75rem;
+    --sidebar-background: 264 35% 18%;
+    --sidebar-foreground: 240 67% 94%;
+    --sidebar-accent: 264 25% 27%;
+    --sidebar-border: 264 20% 28%;
+  }
+
+  * {
+    @apply border-border;
+  }
+
+  body {
+    @apply bg-background font-sans text-foreground;
+    -webkit-font-smoothing: antialiased;
+    user-select: none;
+    overflow: hidden;
+  }
+
+  /* a janela e um app, nao uma pagina: sem selecao de texto solta */
+  input, .event-log {
+    user-select: text;
+  }
+
+  button, input, select, summary, a {
+    @apply focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background;
+  }
+
+  select { @apply border border-border; color-scheme: dark; }
+  select:disabled, button:disabled { cursor: not-allowed; }
+}
+
+@layer components {
+  .connection-badge { color: #c7b6e0; border-color: #4a4e8f; background: #26203d; }
+  .session-target { background: #1e182b; }
+  .connection-empty { background: #21182f; }
+  .preview-banner { @apply rounded-lg border px-3 py-2 text-muted-foreground; border-color: #4a4e8f; }
+  .nav-active { box-shadow: inset 3px 0 #a490c2; }
+  .panic-button { border-color: #80536e; color: #f0bed3; background: #382235; }
+  .panic-button:hover:enabled { background: #4a2b43; }
+  .panic-button:disabled { opacity: 0.55; }
+  .voxel-mark { position: relative; display: block; width: 32px; height: 34px; flex-shrink: 0; }
+  .voxel-mark i { position: absolute; width: 14px; height: 14px; border: 1px solid #c3b0dd; background: #a490c2; border-radius: 3px; }
+  .voxel-mark i:first-child { top: 0; left: 9px; transform: rotate(45deg); }
+  .voxel-mark i:nth-child(2) { top: 15px; left: 0; background: #4a4e8f; }
+  .voxel-mark i:nth-child(3) { top: 15px; left: 18px; background: #6d5c86; }
+}
+
+@media (max-width: 740px) {
+  .app-shell { flex-direction: column; }
+  .app-sidebar { width: 100%; flex-direction: row; align-items: center; border-right: 0; border-bottom: 1px solid hsl(var(--border)); }
+  .app-sidebar > .drag-region { padding: 12px; }
+  .focus-label, .sidebar-controls, .app-sidebar .voxel-mark { display: none; }
+  .app-sidebar nav { flex: 1; flex-direction: row; justify-content: flex-end; padding: 8px; gap: 4px; }
+  .app-sidebar nav button { padding: 10px; gap: 6px; font-size: 12px; }
+  .app-sidebar nav svg { display: none; }
+  .app-main { padding: 16px; min-height: 0; }
+  .app-main header { flex-wrap: wrap; gap: 8px; }
+  .app-main h1 { font-size: 24px; }
+  .settings-row { flex-wrap: wrap; gap: 10px; }
+  .settings-row > div:last-child { margin-left: auto; max-width: 100%; flex-wrap: wrap; }
+}
+
+@media (max-width: 420px) {
+  .app-sidebar > .drag-region { display: none; }
+  .app-sidebar nav { justify-content: space-around; }
+  .session-strip { gap: 8px; }
+  .session-target { padding: 10px; gap: 8px; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after { animation: none !important; transition: none !important; scroll-behavior: auto !important; }
+}
+
+@layer utilities {
+  .hide-scrollbar::-webkit-scrollbar {
+    width: 8px;
+  }
+  .hide-scrollbar::-webkit-scrollbar-thumb {
+    @apply rounded-full bg-accent;
+  }
+  .hide-scrollbar::-webkit-scrollbar-track {
+    background: transparent;
+  }
+  /* barra de titulo arrastavel do pywebview */
+  .drag-region {
+    -webkit-app-region: drag;
+  }
+  .no-drag {
+    -webkit-app-region: no-drag;
+  }
+}

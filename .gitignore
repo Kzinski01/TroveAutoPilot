@@ -1,0 +1,42 @@
+# Personal state and captures
+/config.json
+/config.json.tmp
+/selftest.json
+*.log
+/templates/
+/artifacts/
+/backups/
+/output/
+/.playwright-cli/
+/ui/.playwright-cli/
+
+# Dependencies and generated releases
+__pycache__/
+*.py[cod]
+.venv/
+.audit-venv/
+.ruff_cache/
+.pytest_cache/
+node_modules/
+.next/
+/ui/out/
+*.tsbuildinfo
+/build/
+/dist/
+/release/
+/release-audit/
+/Build Final/
+*.zip
+*.zip.sha256
+*.spec
+
+# Local credentials and editor state
+.env
+.env.*
+!.env.example
+*.pem
+*.key
+.vscode/
+.idea/
+Thumbs.db
+.DS_Store
