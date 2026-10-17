@@ -269,6 +269,16 @@ class TargetedInputTest(unittest.TestCase):
         with mock.patch.object(self.windows, "point_belongs", side_effect=lambda hwnd, x, y: (x, y) != (416, 316)):
             self.assertIsNone(self.sender.skill_region({"window_region": binding}))
 
+    def test_outside_region_is_not_reported_as_an_occluding_window(self):
+        self.assertEqual(self.sender.region_issue([890, 300, 32, 32]), "outside")
+        self.assertIsNone(self.sender.bind_region([890, 300, 32, 32]))
+
+    def test_visibility_reason_distinguishes_occlusion_from_unavailable_game(self):
+        self.windows.hit = 100
+        self.assertEqual(self.sender.region_issue([400, 300, 32, 32]), "covered")
+        self.windows.minimized = True
+        self.assertEqual(self.sender.region_issue([400, 300, 32, 32]), "unavailable")
+
     def background_skill(self):
         binding = self.sender.bind_region((400, 300, 32, 32))
         self.sender.set_mode("messages")

@@ -16,6 +16,8 @@ A comparação exige várias amostras consistentes para filtrar oscilações. Ex
 
 Janelas sobre a barra pausam a leitura e geram um aviso no app. Mova a janela que estiver cobrindo os ícones, inclusive o próprio AutoPilot. Ao voltar a ver a barra, o app coleta novas amostras antes de retomar.
 
+O aviso de ícone encoberto exige uma janela sobre a área usada na leitura. Falha de reconhecimento, área fora dos limites e janela indisponível têm mensagens diferentes. Espaços vazios ao redor dos ícones não bloqueiam a rotina, e o app procura a nova posição se a barra mudar de lugar.
+
 ## Limites
 
 A leitura usa pixels da tela; não consulta o estado interno do Trove. Efeitos visuais, modificações da interface, skills sem contraste entre estados e ícones sem cooldown visível podem impedir o aprendizado. O app aguarda nesses casos. É possível desligar o modo automático e usar as capturas manuais nos ajustes avançados de cada skill.

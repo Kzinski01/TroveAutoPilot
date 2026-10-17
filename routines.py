@@ -155,7 +155,7 @@ class SkillRoutine:
                               or not self.skill_monitor.ready(skill, self.input.selected())):
                 return False
             if automatic and not self.input.skill_region(skill):
-                self.skill_monitor.pause(skill, self.input.skill_blocked_reason(skill))
+                self._pause_skill_region(skill)
                 return False
             if self._press(skill.get("key", "")) is False:
                 return False
@@ -190,12 +190,18 @@ class SkillRoutine:
             self.skill_monitor.pause(skill, "Aguardando o diálogo fechar")
             return None
         reason = self.input.blocked_reason()
-        if reason or not self.slot_locator.ready_for(skill):
-            self.skill_monitor.pause(skill, reason or "Aguardando a barra de skills")
+        if reason:
+            self.skill_monitor.pause(skill, reason, issue="unavailable")
+            return None
+        if not self.slot_locator.ready_for(skill):
+            location = self.slot_locator.state()
+            issue = location.get("issue")
+            self.skill_monitor.pause(skill, location["status"], issue=issue,
+                                     preserve_cycle=issue in ("not_found", "changed"))
             return None
         selected, region = self.input.selected(), self.input.skill_region(skill)
         if not region:
-            self.skill_monitor.pause(skill, self.input.skill_blocked_reason(skill))
+            self._pause_skill_region(skill)
             return None
         try:
             frame = vision.grab(region)
@@ -206,9 +212,13 @@ class SkillRoutine:
             if (not self.cfg.get("auto_slots", {}).get("enabled", False)
                     or not self.slot_locator.ready_for(skill) or self.input.selected() != selected
                     or self.input.skill_region(skill) != region or self.input.blocked_reason()):
-                self.skill_monitor.pause(skill, "Leitura interrompida. Deixe os ícones visíveis.")
+                self._pause_skill_region(skill)
                 return None
             return self.skill_monitor.observe(skill, selected, frame)
+
+    def _pause_skill_region(self, skill):
+        self.skill_monitor.pause(skill, self.input.skill_blocked_reason(skill) or "Janela ou área alterada; aguardando nova leitura",
+                                 issue=self.input.skill_blocked_code(skill) or "changed")
 
 
 class PotionRoutine:

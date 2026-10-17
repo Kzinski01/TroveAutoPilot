@@ -11,6 +11,17 @@ import cv2
 import vision
 from slot_detection import SlotDetector, SlotMatch
 
+ISSUES = {
+    "covered": ("ícones encobertos; skills pausadas",
+                "Mova a janela sobre os ícones do Jogo 1. A leitura será retomada automaticamente."),
+    "not_found": ("barra não reconhecida ou ambígua; tentando novamente",
+                  "Não reconheci os rótulos M2, 1 e 2. Confira a barra e clique em Detectar skills."),
+    "outside": ("área detectada fora da janela; tentando novamente",
+                "A área anterior não cabe na janela atual. Clique em Detectar skills para recalcular."),
+    "unavailable": ("aguardando janela disponível", "Restaure o Jogo 1 e confira a janela selecionada."),
+    "changed": ("barra mudou durante a captura; tentando novamente", None),
+}
+
 
 @dataclass(frozen=True)
 class SlotLocation:
@@ -36,6 +47,7 @@ class AutoSlots:
         self._confidence = None
         self._revision = 0
         self._warning = None
+        self._issue = None
 
     def set_logger(self, log):
         self._log = log
@@ -47,6 +59,9 @@ class AutoSlots:
             self._context = None
             self._match = None
             self._next_at = 0.0
+            self._warning = None
+            self._issue = None
+            self._confidence = None
 
     def set_enabled(self, enabled):
         with self._lock:
@@ -54,13 +69,18 @@ class AutoSlots:
             self.invalidate()
             self._set_status("aguardando localização" if enabled else "manual")
 
-    def _set_status(self, status, warning=None):
+    def _set_status(self, status, warning=None, issue=None):
         if not self.options["enabled"]:
             status = "manual"
         if status != self._status:
             self._log(f"[Bot][Slots] {status}")
         self._status = status
         self._warning = warning if self.options["enabled"] else None
+        self._issue = issue if self.options["enabled"] else None
+
+    def _set_issue(self, issue):
+        status, message = ISSUES[issue]
+        self._set_status(status, message, issue)
 
     def _current(self):
         selected = self.input.selected()
@@ -78,19 +98,14 @@ class AutoSlots:
         with self._lock:
             return {"enabled": self.options["enabled"], "status": self._status,
                     "warning": self._warning,
+                    "issue": self._issue,
                     "confidence": self._confidence,
                     "skills": [dict(skill) for skill in self.cfg["skills"]]}
 
     def update(self, force=False):
         if not self.options["enabled"]:
             return False
-        if self._bar_is_covered():
-            with self._lock:
-                self._validated = None
-                self._confidence = None
-                self._set_status("barra encoberta; skills pausadas",
-                                 "Mova a janela que cobre os ícones do Jogo 1. A leitura será retomada automaticamente.")
-            return False
+        covered = self._bar_is_covered()
         if not force:
             reason = self.input.blocked_reason()
             if reason:
@@ -98,26 +113,32 @@ class AutoSlots:
                     with self._lock:
                         self._validated = None
                         self._confidence = None
-                        self._set_status(f"aguardando: {reason}")
+                        if covered:
+                            self._set_issue("covered")
+                        else:
+                            self._set_status(f"aguardando: {reason}")
                 return False
         current = self._current()
         now = time.monotonic()
-        if not force and current == self._context and now < self._next_at:
+        newly_covered = covered and self._validated is not None
+        if not force and not newly_covered and current == self._context and now < self._next_at:
             return self._validated is not None
         if not self._scan_lock.acquire(blocking=False):
             return False
+        success = False
         try:
-            return self._scan(current)
+            success = self._scan(current, covered)
+            return success
         except (OSError, ValueError, cv2.error) as exc:
             with self._lock:
                 self._validated = None
                 self._set_status(f"localização pausada: {exc}")
             return False
         finally:
-            self._next_at = time.monotonic() + 1.5
+            self._next_at = time.monotonic() + (1.5 if success else 0.25)
             self._scan_lock.release()
 
-    def _scan(self, current):
+    def _scan(self, current, covered=False):
         with self._lock:
             revision = self._revision
             previous = self._match if current == self._context else None
@@ -131,18 +152,19 @@ class AutoSlots:
         detector = self._get_detector()
         match = self._find_match(detector, client, previous)
         if match is None:
-            self._set_status("barra não reconhecida ou ambígua; skills pausadas",
-                             "Não consigo ler a barra de skills. Deixe os ícones do Jogo 1 visíveis e mova janelas sobre eles.")
+            self._set_issue("covered" if covered else "not_found")
             return False
         regions = self._screen_regions(match, client)
         bindings = self._bind_all(regions)
-        if not bindings or current != self._current():
-            self._set_status("barra encoberta ou janela alterada; skills pausadas",
-                             "Deixe os ícones do Jogo 1 visíveis. Mova a janela que estiver sobre eles.")
+        if not bindings:
+            self._set_issue(self._region_issue(regions) or "changed")
+            return False
+        if current != self._current():
+            self._set_issue("changed")
             return False
         # Confirm on a second frame, so a resize/move during capture cannot bind stale pixels.
         if not self._confirm_match(detector, client, match):
-            self._set_status("barra mudou durante a captura; tentando novamente")
+            self._set_issue("changed")
             return False
         return self._apply(SlotLocation(current, match, regions, bindings, revision))
 
@@ -154,11 +176,10 @@ class AutoSlots:
 
     @staticmethod
     def _screen_regions(match, client):
-        regions = {name: [client[0] + x, client[1] + y, width, height]
-                   for name, (x, y, width, height) in match.regions().items()}
-        regions["bar"] = [client[0] + match.x, client[1] + match.y,
-                          round(145 * match.scale), round(45 * match.scale)]
-        return regions
+        # Empty gaps and the strip below the icons are not part of the read area.
+        local = {**match.regions(), **match.label_regions()}
+        return {name: [client[0] + x, client[1] + y, width, height]
+                for name, (x, y, width, height) in local.items()}
 
     @staticmethod
     def _confirm_match(detector, client, match):
@@ -182,7 +203,12 @@ class AutoSlots:
             current = self.input.client_region(require_focus=False)
             if self.input.selected() != selected or not current or tuple(current) != client:
                 return False
-            return self._bind_all(self._screen_regions(self._match, client)) is None
+            regions = self._screen_regions(self._match, client)
+            return any(self.input.region_issue(region) == "covered" for region in regions.values())
+
+    def _region_issue(self, regions):
+        return next((issue for region in regions.values()
+                     if (issue := self.input.region_issue(region)) is not None), None)
 
     def _bind_all(self, regions):
         bindings = {name: self.input.bind_region(region, require_focus=False)
@@ -195,8 +221,11 @@ class AutoSlots:
         with self._lock:
             if not self.options["enabled"] or location.revision != self._revision:
                 return False
-            if current != self._current() or self._bind_all(regions) != bindings:
-                self._set_status("barra encoberta ou janela alterada; skills pausadas")
+            if current != self._current():
+                self._set_issue("changed")
+                return False
+            if self._bind_all(regions) != bindings:
+                self._set_issue(self._region_issue(regions) or "changed")
                 return False
             changed = (self._match is None or
                        (self._match.x, self._match.y, self._match.scale) != (match.x, match.y, match.scale))

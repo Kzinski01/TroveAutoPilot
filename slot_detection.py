@@ -26,6 +26,11 @@ class SlotMatch:
                        round(36 * self.scale), round(29 * self.scale)]
                 for name, offset in (("m2", 0), ("s1", 50), ("s2", 100))}
 
+    def label_regions(self):
+        return {f"label_{name}": [self.x + round(offset * self.scale), self.y,
+                                  round(width * self.scale), round(12 * self.scale)]
+                for name, offset, width in (("m2", 0, 20), ("s1", 50, 8), ("s2", 100, 8))}
+
 
 def text_mask(image):
     """White/gray glyphs remain readable when the colored icon darkens."""

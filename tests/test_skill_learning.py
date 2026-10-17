@@ -110,6 +110,22 @@ class VisualCycleTest(unittest.TestCase):
         self.feed(ICON)
         self.assertFalse(self.model.calibrated)
 
+    def test_brief_label_detection_failure_does_not_erase_observed_cycle(self):
+        self.feed(ICON)
+        self.feed(DARK)
+        self.model.pause(preserve_cycle=True)
+        self.assertFalse(self.model.ready)
+        self.feed(ICON)
+        self.assertTrue(self.model.calibrated)
+
+    def test_long_label_detection_failure_discards_incomplete_cycle(self):
+        self.feed(ICON)
+        self.feed(DARK)
+        self.model.pause(preserve_cycle=True)
+        self.now += 2
+        self.feed(ICON)
+        self.assertFalse(self.model.calibrated)
+
     def test_stale_sample_gap_requires_fresh_frames(self):
         self.learn()
         self.now += 5

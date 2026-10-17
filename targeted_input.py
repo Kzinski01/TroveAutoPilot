@@ -17,6 +17,12 @@ BUTTON_MESSAGES = {"left": (0x0201, 0x0202, 1),
                    "right": (0x0204, 0x0205, 2),
                    "middle": (0x0207, 0x0208, 16)}
 
+REGION_MESSAGES = {
+    "unavailable": "janela indisponível/minimizada ou sem foco no modo Compatibilidade",
+    "outside": "área do ícone fora da janela; detecte as skills novamente",
+    "covered": "ícone encoberto por outra janela",
+}
+
 
 class TargetedInput:
     def __init__(self, cfg, log=None):
@@ -33,6 +39,7 @@ class TargetedInput:
         self._last_focused = None
         self._suspended = False
         self._skill_blocks = {}
+        self._skill_block_codes = {}
 
     def set_logger(self, log):
         self._log = log
@@ -56,6 +63,7 @@ class TargetedInput:
             self._last_reason = None
             self._last_focused = None
             self._skill_blocks.clear()
+            self._skill_block_codes.clear()
             self._log(f"[Bot] Janela selecionada: {candidate['title']} ({candidate['exe']})")
             self._log(f"[Bot] HWND: {candidate['hwnd']} (0x{candidate['hwnd']:X})")
             self._log(f"[Bot] PID: {candidate['pid']}")
@@ -134,26 +142,42 @@ class TargetedInput:
 
     def bind_region(self, region, require_focus=True):
         """Associate a manually captured area with client coordinates and size."""
+        with self._lock:
+            client, issue = self._check_region(region, require_focus)
+            if issue:
+                return None
+            x, y, width, height = region
+            return {"relative": [x - client[0], y - client[1], width, height],
+                    "client_size": list(client[2:])}
+
+    def region_issue(self, region, require_focus=False):
+        with self._lock:
+            return self._check_region(region, require_focus)[1]
+
+    def _check_region(self, region, require_focus):
         client = self.client_region(require_focus=require_focus)
-        if not client or not region:
-            return None
+        if not client:
+            return None, "unavailable"
+        if not region:
+            return client, "outside"
         x, y, width, height = region
-        if width <= 0 or height <= 0:
-            return None
+        if (width <= 0 or height <= 0 or not windows.contains(client, x, y)
+                or not windows.contains(client, x + width - 1, y + height - 1)):
+            return client, "outside"
         points = ((px, py) for px in (x, x + width // 2, x + width - 1)
                   for py in (y, y + height // 2, y + height - 1))
-        if not all(windows.contains(client, px, py) and windows.point_belongs(
+        if not all(windows.point_belongs(
                 self._target["hwnd"], px, py) for px, py in points):
-            return None
-        return {"relative": [x - client[0], y - client[1], width, height],
-                "client_size": list(client[2:])}
+            return client, "covered"
+        return client, None
 
     def skill_region(self, skill):
         with self._lock:
-            region, reason = self._skill_region(skill)
+            region, reason, code = self._skill_region(skill)
             skill_id = skill.get("id", "?")
             previous = self._skill_blocks.get(skill_id)
             self._skill_blocks[skill_id] = reason
+            self._skill_block_codes[skill_id] = code
             if reason != previous:
                 message = f"pausada: {reason}" if reason else "leitura retomada"
                 self._log(f"[Bot] Skill {skill.get('name', skill_id)}: {message}")
@@ -163,6 +187,10 @@ class TargetedInput:
         with self._lock:
             return self._skill_blocks.get(skill.get("id", "?"))
 
+    def skill_blocked_code(self, skill):
+        with self._lock:
+            return self._skill_block_codes.get(skill.get("id", "?"))
+
     def _skill_region(self, skill):
         # Messages can target an unfocused game. MSS still needs its icon pixels
         # exposed on the desktop, so validate visibility before AND after grab.
@@ -170,16 +198,17 @@ class TargetedInput:
         client = self.client_region(require_focus=require_focus)
         binding = skill.get("window_region")
         if not client:
-            return None, "janela indisponível/minimizada ou sem foco no modo Compatibilidade"
+            return None, REGION_MESSAGES["unavailable"], "unavailable"
         if not binding:
-            return None, "recapture a área do ícone na instância selecionada"
+            return None, "recapture a área do ícone na instância selecionada", "not_found"
         if list(client[2:]) != binding.get("client_size"):
-            return None, "janela redimensionada; recapture a área do ícone"
+            return None, "janela redimensionada; recapture a área do ícone", "outside"
         x, y, width, height = binding["relative"]
         region = [client[0] + x, client[1] + y, width, height]
-        if not self.bind_region(region, require_focus=require_focus):
-            return None, "ícone encoberto por outra janela ou fora da área selecionada"
-        return region, None
+        issue = self.region_issue(region, require_focus=require_focus)
+        if issue:
+            return None, REGION_MESSAGES[issue], issue
+        return region, None, None
 
     def _post(self, message, wparam, lparam):
         if not self._identity_valid():

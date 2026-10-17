@@ -96,6 +96,7 @@ export interface SecondaryState {
 }
 
 export interface AutoSlotsState {
+  issue?: 'covered' | 'not_found' | 'outside' | 'unavailable' | 'changed' | null;
   warning?: string | null;
   enabled: boolean;
   status: string;
@@ -104,6 +105,7 @@ export interface AutoSlotsState {
 }
 
 export interface SkillReading {
+  issue?: AutoSlotsState['issue'];
   status: 'learning' | 'watching' | 'ready' | 'cooldown' | 'confirming' | 'blocked';
   message: string;
   ratio: number | null;

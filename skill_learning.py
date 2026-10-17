@@ -45,14 +45,15 @@ class VisualCycle:
         self._dark_samples = 0
         self._different_since = None
 
-    def pause(self):
+    def pause(self, preserve_cycle=False):
         self.ready = False
         self._samples.clear()
         self._dark_samples = 0
-        self.low_seen = False
-        self.awaiting_change = False
-        self._cooldown_at = None
-        self._last_at = None
+        if not preserve_cycle:
+            self.low_seen = False
+            self.awaiting_change = False
+            self._cooldown_at = None
+            self._last_at = None
         self._different_since = None
         self.status = "blocked"
 
@@ -173,15 +174,16 @@ class SkillMonitor:
             }
             return ratio
 
-    def pause(self, skill, message):
+    def pause(self, skill, message, issue=None, preserve_cycle=False):
         with self._lock:
             saved = self._cycles.get(skill["id"])
             if saved:
-                saved[1].pause()
+                saved[1].pause(preserve_cycle=preserve_cycle)
             self._readings[skill["id"]] = {
                 "status": "blocked", "message": message, "ratio": None,
                 "calibrated": bool(saved and saved[1].calibrated), "ready": False,
                 "lastCooldown": None,
+                "issue": issue,
             }
 
     def ready(self, skill, target):

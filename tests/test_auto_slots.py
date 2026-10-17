@@ -217,7 +217,7 @@ class AutomaticSlotsTest(unittest.TestCase):
         self.grab.side_effect = overlay
         self.assertFalse(self.locator.update(force=True))
         self.assertFalse(self.locator.ready_for(self.cfg["skills"][0]))
-        self.assertIn("encoberta", self.locator.state()["status"])
+        self.assertEqual(self.locator.state()["issue"], "covered")
 
     def test_closed_window_cannot_reuse_old_detection(self):
         self.locate()
@@ -356,6 +356,90 @@ class AutomaticSlotsTest(unittest.TestCase):
         self.grab.side_effect = cover
         self.assertIsNone(self.engine._skill_ratio(self.cfg["skills"][1]))
         self.assertFalse(self.engine.skill_monitor.state()["s1"]["ready"])
+
+    def test_unused_strip_below_icons_does_not_block_visible_skills(self):
+        self.locate()
+        match = self.locator._match
+        client = self.windows.region
+        unused = (client[0] + match.x, client[1] + match.y + round(45 * match.scale) - 1)
+        with mock.patch.object(self.windows, "point_belongs", side_effect=lambda hwnd, x, y: (x, y) != unused):
+            self.assertTrue(self.locator.update(force=True))
+        self.assertIsNone(self.locator.state()["warning"])
+
+    def test_visible_icons_at_bottom_edge_do_not_require_empty_space_below_them(self):
+        self.frame[:] = 0
+        self.frame[554:600, 150:513] = REFERENCE[:46]
+        self.assertTrue(self.locator.update(force=True))
+        self.assertIsNone(self.locator.state()["issue"])
+
+    def test_actually_clipped_icons_are_outside_not_covered(self):
+        self.frame[:] = 0
+        self.frame[564:600, 150:513] = REFERENCE[:36]
+        self.assertFalse(self.locator.update(force=True))
+        self.assertEqual(self.locator.state()["issue"], "outside")
+        self.assertNotIn("Mova", self.locator.state()["warning"])
+
+    def test_bar_can_relocate_when_old_position_is_covered(self):
+        self.locate()
+        old = self.cfg["skills"][0]["region"]
+        self.frame = screen(x=230, y=510)
+        with mock.patch.object(self.windows, "point_belongs", side_effect=lambda hwnd, x, y: not (
+                old[0] <= x < old[0] + old[2] and old[1] <= y < old[1] + old[3])):
+            self.assertTrue(self.locator.update())
+        self.assertNotEqual(old, self.cfg["skills"][0]["region"])
+        self.assertIsNone(self.locator.state()["issue"])
+
+    def test_unrecognized_pixels_do_not_claim_another_window_is_covering_them(self):
+        self.locate()
+        self.frame[:] = 0
+        self.assertFalse(self.locator.update(force=True))
+        self.assertEqual(self.locator.state()["issue"], "not_found")
+        self.assertNotIn("Mova", self.locator.state()["warning"])
+
+    def test_transient_detection_failure_retries_before_normal_scan_interval(self):
+        self.frame[:] = 0
+        with mock.patch.object(auto_slots.time, "monotonic", return_value=10):
+            self.assertFalse(self.locator.update(force=True))
+        self.frame = screen()
+        with mock.patch.object(auto_slots.time, "monotonic", return_value=10.30):
+            self.assertTrue(self.locator.update())
+
+    def test_skill_can_finish_learning_and_fire_after_brief_recognition_failure(self):
+        self.locate()
+        skill = self.cfg["skills"][1]
+        icon = np.random.default_rng(42).integers(55, 230, (32, 32, 3), dtype=np.uint8)
+        now = 10
+        self.engine.master = True
+        def sample(frame):
+            nonlocal now
+            self.grab.side_effect = lambda region: frame.copy()
+            for _ in range(6):
+                now += 0.11
+                with mock.patch("skill_learning.time.monotonic", return_value=now):
+                    self.engine._skill_ratio(skill)
+        sample(icon)
+        sample((icon * 0.2).astype(np.uint8))
+        self.grab.side_effect = lambda region: np.zeros_like(self.frame)
+        self.assertFalse(self.locator.update(force=True))
+        with mock.patch("skill_learning.time.monotonic", return_value=now + 0.11):
+            self.assertIsNone(self.engine._skill_ratio(skill))
+        self.grab.side_effect = lambda region: self.frame.copy()
+        self.assertTrue(self.locator.update(force=True))
+        sample(icon)
+        with mock.patch.object(self.engine, "_press", return_value=True) as press, \
+                mock.patch("skill_learning.time.monotonic", return_value=now + 0.11):
+            self.assertTrue(self.engine._try_skill(skill))
+            press.assert_called_once_with("1")
+
+    def test_repeated_occlusion_does_not_rescan_the_whole_client_on_every_tick(self):
+        self.locate()
+        self.windows.hit = 100
+        with mock.patch.object(auto_slots.time, "monotonic", return_value=10):
+            self.assertFalse(self.locator.update(force=True))
+        self.grab.reset_mock()
+        with mock.patch.object(auto_slots.time, "monotonic", return_value=10.10):
+            self.assertFalse(self.locator.update())
+        self.grab.assert_not_called()
 
 
 if __name__ == "__main__":
