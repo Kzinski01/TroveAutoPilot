@@ -1,47 +1,18 @@
-# Interface Midnight Galaxy
+﻿# Interface
 
-Tema escolhido pelo mantenedor em 16/10/2026, após apresentação do catálogo da
-[theme-factory](https://github.com/anthropics/skills/tree/main/skills/theme-factory).
-Revisão orientada também por
-[frontend-design](https://github.com/anthropics/skills/tree/main/skills/frontend-design).
+Fundo Glass Fold azul, painéis translúcidos e fonte Geist local. A navegação, os destinos das duas janelas e o botão Parar tudo ficam visíveis durante o uso.
 
-## Plano e revisão
+O botão Detectar skills aparece no topo e na aba Skills. Ele ativa a busca e localiza M2, 1 e 2 em uma ação. A captura Pronta continua necessária para calibrar o cooldown de cada slot.
 
-O aplicativo é um painel compacto de automação para quem acompanha duas janelas
-do Trove. A prioridade visual é identificar destinos, estado do motor e parada
-geral. Não há contagens inventadas ou indicadores de sucesso de input sem prova.
+## Fundo
 
-Paleta: fundo `#171221`, superfície `#21182f`, roxo profundo `#2b1e3e`, azul
-cósmico `#4a4e8f`, lavanda `#a490c2`, texto prata `#e6e6fa`. Os tokens CSS
-usam aproximações HSL dessas cores, com tons auxiliares para bordas e textos.
-Foi mantida a Geist local já embutida, com sua licença OFL, como adaptação
-tipográfica do tema: nenhuma fonte é carregada da rede.
+Adaptado do componente Glass Fold de Meerbahadin, fornecido pelo mantenedor a partir do [21st.dev](https://21st.dev/?qt=background&preview=%2F%40meerbahadin10%2Fcomponents%2Fglass-fold). Referência do autor: [GradFlow](https://gradflow.meerbahadin.dev).
 
-```text
-Navegação | Título e conexão
-          | Jogo 1 / Jogo 2
-          | Seleção de destino
-          | Controles da aba (rolagem)
-Master    | Atividade (recolhível)
-Parar tudo|
-```
+- WebGL sem dependências adicionais, limitado a 30 quadros por segundo.
+- Animação pausada quando a janela está oculta ou o sistema pede movimento reduzido.
+- Fundo CSS quando WebGL não está disponível; recuperação após perda de contexto.
+- Limite de resolução para reduzir o trabalho da GPU.
 
-A proposta inicial de cartões de métricas decorativas foi descartada: não
-ajudava a escolher os processos. Os dois resumos exibem os destinos reais. A
-marca de blocos é uma referência discreta ao mundo voxel do jogo; o restante
-usa linhas e hierarquia simples. As referências [Spell](https://spell.sh/),
-[21st](https://21st.dev/) e [Inspora](https://www.inspora.design/) orientaram a
-qualidade de acabamento, sem copiar componentes ou introduzir código remoto.
+## Imagens do README
 
-## Implementação
-
-- Navegação com página atual e foco de teclado visível.
-- Parada geral acessível pela barra lateral, além do atalho configurado.
-- Cores e switches alinhados ao tema; botão ativo com contraste escuro.
-- Log recolhível e selecionável, estados de espera, erro e desconexão explícitos.
-- Prévia opt-in (`?preview=1`), sem ponte de input e com ações desabilitadas.
-- Navegação compacta em telas pequenas; campos e linhas quebram sem perder controles.
-- Preferência de movimento reduzido respeitada.
-
-A revisão visual usa a prévia sem ações e o selftest da janela nativa. A prévia
-não representa uma sessão conectada a processos reais.
+As capturas mostram a interface local. O GIF usa uma ponte simulada para demonstrar o fluxo de detecção, sem capturar ou controlar o jogo. Ele não comprova a aceitação de comandos pelo Trove.

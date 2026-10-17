@@ -8,6 +8,8 @@ import tempfile
 from pathlib import Path
 from zipfile import ZipFile
 
+from main import WINDOW_BACKGROUND
+
 
 def validate_archive(archive, timeout=60):
     if os.name != "nt":
@@ -31,8 +33,11 @@ def _validate_extracted(archive, folder, timeout):
     report = json.loads((application / "selftest.json").read_text(encoding="utf-8"))
     if report.get("bridge") != "object" or report.get("telemetry_ok") is not True:
         raise RuntimeError(f"Falha no selftest da distribuição: {report.get('error', 'ponte/telemetria')}")
-    if report.get("styled") != "rgb(23, 18, 33)":
+    channels = [str(int(WINDOW_BACKGROUND[index:index + 2], 16)) for index in (1, 3, 5)]
+    if report.get("styled") != f"rgb({', '.join(channels)})":
         raise RuntimeError("O CSS da interface não carregou")
+    if report.get("background_renderer") not in ("webgl", "fallback"):
+        raise RuntimeError("O componente de fundo da interface não carregou")
     if "ZoneId=3" not in Path(str(runtime) + ":Zone.Identifier").read_text(encoding="ascii"):
         raise RuntimeError("O teste removeu a marca de download da DLL")
     print("Release aprovada: extração isolada, ZoneId=3, CSS, ponte e telemetria.")

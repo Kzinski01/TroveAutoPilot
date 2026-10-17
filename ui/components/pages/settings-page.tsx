@@ -27,7 +27,7 @@ function ModeToggle({
           className={cn(
             'rounded px-3 py-1 text-xs transition-colors',
             value === option
-              ? 'bg-skyBlue text-white'
+              ? 'bg-primary text-primary-foreground'
               : 'text-muted-foreground hover:text-foreground',
           )}
         >
@@ -111,7 +111,7 @@ export function SettingsPage() {
         <CardHeader>
           <CardTitle>Segurar tecla</CardTitle>
           <CardDescription>
-            Aperta a tecla, segura pelo tempo abaixo, solta e repete na hora.
+            Segura a tecla pelo tempo definido e repete.
           </CardDescription>
         </CardHeader>
         <CardContent className="divide-border divide-y">
@@ -149,7 +149,7 @@ export function SettingsPage() {
         <CardContent className="divide-border divide-y">
           <SettingsRow
             title="Somente com o jogo em foco"
-            description="Obrigatório no modo Compatibilidade. Use o seletor de instância acima."
+            description="Obrigatório no modo Compatibilidade."
           >
             <Switch
               checked={true}
@@ -165,7 +165,7 @@ export function SettingsPage() {
           </SettingsRow>
           <SettingsRow
             title="Outros títulos aceitos"
-            description="Separe por vírgula. Útil quando o jogo troca o nome da janela."
+            description="Separe por vírgula."
           >
             <Input
               className="h-8 w-44"
@@ -192,7 +192,7 @@ export function SettingsPage() {
           <CardDescription>
             {state.admin
               ? 'Rodando como administrador.'
-              : 'Sem privilégio de administrador: o Windows pode descartar o input.'}
+              : 'O jogo pode exigir execução como administrador.'}
           </CardDescription>
         </CardHeader>
         <CardContent className="divide-border divide-y">
@@ -225,7 +225,7 @@ export function SettingsPage() {
           </SettingsRow>
           <SettingsRow
             title="Diagnóstico"
-            description="Mostra no log por que cada rotina está ou não agindo."
+            description="Veja no log o que bloqueia cada rotina."
           >
             <Button variant="outline" size="sm" onClick={() => call('diagnose')}>
               Executar

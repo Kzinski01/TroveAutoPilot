@@ -45,14 +45,13 @@ export function SecondaryControls() {
       <CardHeader>
         <CardTitle>Jogo 2 — tecla periódica</CardTitle>
         <CardDescription>
-          Envia uma tecla somente para a segunda janela, sem trocar o foco.
-          Funciona pelo próprio botão abaixo, mesmo com o master de ataques desligado. F12 para ambos.
+          Envia uma tecla ao Jogo 2, mesmo com o master desligado. F12 para ambos.
         </CardDescription>
       </CardHeader>
       <CardContent className="space-y-3">
         <p className="text-xs">{target
-          ? `${target.title} — HWND ${target.hwnd} / PID ${target.pid}`
-          : 'Selecione a janela que receberá E.'}</p>
+          ? `${target.title} (PID ${target.pid})`
+          : 'Selecione o Jogo 2.'}</p>
         <div className="flex flex-wrap gap-2">
           <select aria-label="Janela da tecla periódica (Jogo 2)" className="bg-input min-w-0 flex-1 rounded p-2 text-xs"
             value={chosen} disabled={busy} onChange={(event) => setChosen(event.target.value)}>
@@ -60,7 +59,7 @@ export function SecondaryControls() {
             {windows.map((item) => (
               <option key={`${item.hwnd}:${item.process_created}`} value={String(item.hwnd)}
                 disabled={item.pid === state?.selectedWindow?.pid}>
-                {item.title} | HWND {item.hwnd} | PID {item.pid} | área {item.region?.join(', ') ?? '?'}
+                {item.title} (PID {item.pid})
                 {item.pid === state?.selectedWindow?.pid ? ' (Jogo 1 — ataques)' : ''}
               </option>
             ))}

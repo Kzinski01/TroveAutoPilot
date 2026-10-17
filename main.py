@@ -23,7 +23,7 @@ SELFTEST_DELAY = 8           # tempo que o selftest da para a interface subir
 WINDOW_TITLE = "Trove AutoBot"
 WINDOW_SIZE = (1040, 760)
 WINDOW_MIN_SIZE = (920, 660)
-WINDOW_BACKGROUND = "#171221"
+WINDOW_BACKGROUND = "#06081e"
 
 
 def _bundled(relative):
@@ -239,6 +239,8 @@ def _selftest(window, index):
               "styled": window.evaluate_js(
                   "getComputedStyle(document.body).backgroundColor"),
               "telemetry_ok": verificar_telemetria(),
+              "background_renderer": window.evaluate_js(
+                  "document.querySelector('canvas[data-renderer]')?.dataset.renderer || 'missing'"),
         }
 
     def gravar(relatorio):

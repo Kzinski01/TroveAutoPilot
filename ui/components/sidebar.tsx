@@ -73,8 +73,8 @@ export function Sidebar({
 
       <div className="sidebar-controls mt-auto space-y-5 px-4 py-5">
         <div className="rounded-lg border border-sidebar-border p-3 text-xs leading-5 text-muted-foreground">
-          <span className="block font-medium text-foreground">Duas janelas. Um painel.</span>
-          Ataques no Jogo 1 e uma tecla periódica no Jogo 2.
+          <span className="block font-medium text-foreground">Controles do jogo</span>
+          Jogo 1: ataques. Jogo 2: tecla periódica.
         </div>
         <div className="flex items-center justify-between">
           <span className={cn('text-sm font-medium', !master && 'text-muted-foreground')}>

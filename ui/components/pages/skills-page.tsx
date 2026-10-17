@@ -3,6 +3,7 @@
 import * as React from 'react';
 
 import { useBot } from '@/components/bot-provider';
+import { DetectSkillsButton } from '@/components/detect-skills-button';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
@@ -136,28 +137,26 @@ export function SkillsPage() {
     <div className="grid gap-4">
       <Card>
         <CardHeader>
-          <CardTitle>Localização automática dos slots</CardTitle>
+          <CardTitle>Detecção automática das skills</CardTitle>
           <CardDescription>
-            Reconhece M2, 1 e 2 na janela de ataques e acompanha mudanças de tamanho.
-            Deixe a barra visível. Na primeira localização, capture Pronta uma vez em cada slot;
-            as próximas aberturas reutilizam a calibração. Trocar de classe pode exigir nova calibração.
+            Detecte M2, 1 e 2 sem recortar ícones. Deixe a barra do Jogo 1 visível e
+            capture Pronta uma vez por slot, com a skill sem cooldown.
           </CardDescription>
         </CardHeader>
         <CardContent className="space-y-3">
           <div className="flex flex-wrap items-center gap-3">
+            <DetectSkillsButton />
             <Switch checked={automatic?.enabled ?? false} disabled={busy}
               aria-label="Localização automática dos slots"
               onCheckedChange={(enabled) => run(() => call('set_auto_slots', enabled))} />
-            <span className="text-sm">Localizar automaticamente</span>
-            <Button size="sm" variant="outline" disabled={busy || !automatic?.enabled}
-              onClick={() => run(() => call('locate_skills'))}>Localizar agora</Button>
+            <span className="text-sm">Acompanhar a barra automaticamente</span>
           </div>
           <p className="text-muted-foreground text-xs" aria-live="polite">
             {automatic?.status ?? 'Aguardando conexão'}
             {automatic?.confidence != null ? ` — confiança ${(automatic.confidence * 100).toFixed(0)}%` : ''}
           </p>
           {error && <p role="alert" className="text-xs text-red-400">{error}</p>}
-          <p className="text-muted-foreground text-xs">O botão Área volta ao modo manual. Limites e intervalos das skills são mantidos.</p>
+          <p className="text-muted-foreground text-xs">Área desativa a detecção automática.</p>
         </CardContent>
       </Card>
       {(automatic?.skills ?? state?.skills ?? []).map((skill) => (

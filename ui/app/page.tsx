@@ -5,6 +5,7 @@ import { Monitor, Radio, Link2 } from 'lucide-react';
 import Link from 'next/link';
 
 import { BotProvider, useBot } from '@/components/bot-provider';
+import { DetectSkillsButton } from '@/components/detect-skills-button';
 import { LogPanel } from '@/components/log-panel';
 import { WindowSelector } from '@/components/window-selector';
 import { DialogsPage } from '@/components/pages/dialogs-page';
@@ -12,23 +13,24 @@ import { FunctionsPage } from '@/components/pages/functions-page';
 import { SettingsPage } from '@/components/pages/settings-page';
 import { SkillsPage } from '@/components/pages/skills-page';
 import { NAV, Sidebar, type PageKey } from '@/components/sidebar';
+import { GlassFold } from '@/components/ui/glass-fold';
 
 const HEADERS: Record<PageKey, { title: string; description: string }> = {
   funcoes: {
-    title: 'Seu próximo movimento.',
-    description: 'Prepare suas rotinas. O resto acompanha o ritmo do jogo.',
+    title: 'Funções',
+    description: 'Ative rotinas e configure atalhos.',
   },
   skills: {
     title: 'Skills',
-    description: 'Marque a área do ícone, capture o estado pronto e ajuste o limite na caixa.',
+    description: 'Detecte as skills e ajuste o cooldown.',
   },
   janelas: {
     title: 'Janelas',
-    description: 'Capture um trecho único da janela aberta e diga o que fazer quando ela aparecer.',
+    description: 'Configure Claim e convites.',
   },
   ajustes: {
     title: 'Ajustes',
-    description: 'Ritmo das rotinas, travas de segurança e manutenção.',
+    description: 'Configure cliques, teclas e segurança.',
   },
 };
 
@@ -46,7 +48,10 @@ function Shell() {
   const header = HEADERS[current];
 
   return (
-    <div className="app-shell flex h-screen overflow-hidden">
+    <div className="app-shell relative isolate flex h-screen overflow-hidden">
+      <div className="app-backdrop pointer-events-none absolute inset-0 -z-10" aria-hidden="true">
+        <GlassFold speed={0.35} />
+      </div>
       <Sidebar current={current} onNavigate={setCurrent} />
 
       <main className="app-main flex min-w-0 flex-1 flex-col gap-4 p-6">
@@ -54,9 +59,12 @@ function Shell() {
           <div><h1 className="text-[28px] font-semibold leading-tight tracking-tight">{header.title}</h1>
           <p className="text-muted-foreground mt-1 text-sm">{header.description}</p>
           </div>
-          <span className="connection-badge no-drag flex shrink-0 items-center gap-2 rounded-full border px-3 py-1.5 text-[11px]">
+          <div className="no-drag flex shrink-0 flex-wrap items-center gap-2">
+          <DetectSkillsButton onDetect={() => setCurrent('skills')} />
+          <span className="connection-badge flex shrink-0 items-center gap-2 rounded-full border px-3 py-1.5 text-[11px]">
             <Radio className="size-3" />{preview ? 'Prévia visual' : connected ? 'Conectado' : 'Sem conexão'}
           </span>
+          </div>
         </header>
 
         {preview && <p className="preview-banner text-xs">Prévia visual com dados de exemplo. As ações estão desativadas.</p>}
@@ -86,7 +94,7 @@ function Shell() {
           </> : <div className="connection-empty rounded-xl border p-8">
             <Monitor className="mb-4 size-8 text-primary" />
             <h2 className="font-medium">{error ? 'Abra o Trove AutoBot para começar' : 'Conectando ao motor do bot…'}</h2>
-            <p className="mt-2 max-w-md text-sm leading-6 text-muted-foreground">A interface se conecta ao aplicativo no seu computador. Pelo código, compile a interface e execute python main.py.</p>
+            <p className="mt-2 max-w-md text-sm leading-6 text-muted-foreground">Execute o aplicativo para conectar suas janelas.</p>
             <Link href="/?preview=1" className="mt-5 inline-block rounded-md border px-4 py-2 text-sm text-primary">Explorar prévia visual</Link>
           </div>}
         </div>

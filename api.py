@@ -389,10 +389,14 @@ class Api:
         return True
 
     def locate_skills(self):
-        if not self._cfg["auto_slots"]["enabled"]:
-            self.log("[Bot][Slots] Ative a localização automática primeiro.")
+        if not self._bot.input.selected():
+            self.log("[Bot][Slots] Selecione a janela do Jogo 1 antes de detectar as skills.")
             return False
-        return self._offscreen(lambda: self._bot.slot_locator.update(force=True))
+        if not self._cfg["auto_slots"]["enabled"]:
+            self._bot.slot_locator.set_enabled(True)
+        found = self._offscreen(lambda: self._bot.slot_locator.update(force=True))
+        self.save()
+        return found
 
     # -------------------------------------------------------------- janelas
     def update_dialog(self, name, patch):

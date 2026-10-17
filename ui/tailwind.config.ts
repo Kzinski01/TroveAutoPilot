@@ -8,7 +8,7 @@ export default {
   theme: {
     extend: {
       colors: {
-        skyBlue: '#a490c2',
+        skyBlue: '#96d7ff',
         shinyGray: '#A1A1A1',
         panelDark: '#1A1A1A',
         background: 'hsl(var(--background))',

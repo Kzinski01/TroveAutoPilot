@@ -23,7 +23,7 @@ const FEATURES: {
   {
     key: 'autoclick',
     title: 'Auto clique (M1)',
-    description: 'Clique esquerdo contínuo, prioridade máxima',
+    description: 'Repete o clique esquerdo',
   },
   {
     key: 'skills',
@@ -34,7 +34,7 @@ const FEATURES: {
   {
     key: 'holdkey',
     title: 'Segurar tecla',
-    description: 'Segura a tecla, solta e repete sem pausa — roda sozinha, sem o master',
+    description: 'Segura e repete, com controle próprio',
     standalone: true,
   },
   {
@@ -45,8 +45,8 @@ const FEATURES: {
 ];
 
 const GENERAL: { key: HotkeyName; title: string; description: string }[] = [
-  { key: 'master', title: 'Master de ataques', description: 'Controla ataques do Jogo 1. A tecla periódica do Jogo 2 e Segurar tecla têm controles próprios.' },
-  { key: 'panic', title: 'Pânico', description: 'Solta o mouse e para tudo imediatamente.' },
+  { key: 'master', title: 'Master de ataques', description: 'Controla os ataques do Jogo 1.' },
+  { key: 'panic', title: 'Pânico', description: 'Desliga todas as rotinas.' },
 ];
 
 function HotkeyButton({ name }: { name: HotkeyName }) {
@@ -142,7 +142,7 @@ export function FunctionsPage() {
       <Card>
         <CardHeader>
           <CardTitle>Controle geral</CardTitle>
-          <CardDescription>Atalhos que valem para tudo.</CardDescription>
+          <CardDescription>Jogo 2 e Segurar tecla têm controles próprios.</CardDescription>
         </CardHeader>
         <CardContent className="divide-border divide-y">
           {GENERAL.map(({ key, title, description }) => (

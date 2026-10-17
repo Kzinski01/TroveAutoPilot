@@ -40,7 +40,7 @@ function ActionToggle({
           className={cn(
             'rounded px-3 py-1 text-xs transition-colors',
             value === option
-              ? 'bg-skyBlue text-white'
+              ? 'bg-primary text-primary-foreground'
               : 'text-muted-foreground hover:text-foreground',
           )}
         >

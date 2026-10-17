@@ -10,6 +10,11 @@ Dependências, fontes e materiais do jogo preservam suas próprias licenças.
   quando identificar sua edição. A auditoria não verificou essa permissão externamente.
 - **Geist:** Copyright 2024 The Geist Project Authors. SIL Open Font License 1.1.
   Texto completo em [OFL.txt](ui/public/fonts/geist/OFL.txt).
+- **Glass Fold:** shaders adaptados do componente de Meerbahadin no
+  [21st.dev](https://21st.dev/?qt=background&preview=%2F%40meerbahadin10%2Fcomponents%2Fglass-fold),
+  fornecido pelo mantenedor. Referência do autor: [GradFlow](https://gradflow.meerbahadin.dev).
+  O trecho recebido não contém uma licença específica; a MIT deste projeto não
+  altera os direitos do autor sobre esse material.
 - **Trove:** marca, nomes e recortes da interface do jogo pertencem a seus titulares.
   `assets/skill-bar-reference.png` e `tests/fixtures/skill-bar-cooldown.png` são referências
   de reconhecimento visual e testes; a licença MIT não concede direitos sobre o jogo.

@@ -293,6 +293,26 @@ class AutomaticSlotsTest(unittest.TestCase):
         self.locate()
         self.assertEqual(bridge.get_state()["autoSlots"]["skills"][0]["region"], self.cfg["skills"][0]["region"])
 
+    def test_detect_button_enables_and_finds_all_slots_without_manual_regions(self):
+        self.locator.set_enabled(False)
+        bridge = api.Api(self.cfg, self.engine, mock.Mock())
+        with mock.patch.object(config, "save") as save, mock.patch.object(bridge, "_SETTLE", 0):
+            self.assertTrue(bridge.locate_skills())
+            save.assert_called_once()
+        self.assertTrue(self.cfg["auto_slots"]["enabled"])
+        self.assertTrue(all(skill["region"] is not None for skill in self.cfg["skills"]))
+        self.assertTrue(all(skill["ready_score"] == 0 for skill in self.cfg["skills"]))
+
+    def test_detect_button_requires_explicit_game_selection(self):
+        self.locator.set_enabled(False)
+        bridge = api.Api(self.cfg, self.engine, mock.Mock())
+        with mock.patch.object(self.sender, "selected", return_value=None), \
+                mock.patch.object(config, "save") as save:
+            self.assertFalse(bridge.locate_skills())
+            save.assert_not_called()
+        self.assertFalse(self.cfg["auto_slots"]["enabled"])
+        self.grab.assert_not_called()
+
 
 if __name__ == "__main__":
     unittest.main()
