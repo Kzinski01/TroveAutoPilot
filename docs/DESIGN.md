@@ -2,7 +2,9 @@
 
 Fundo Glass Fold azul, painéis translúcidos e fonte Geist local. A navegação, os destinos das duas janelas e o botão Parar tudo ficam visíveis durante o uso.
 
-O botão Detectar skills aparece no topo e na aba Skills. Ele ativa a busca e localiza M2, 1 e 2 em uma ação. A captura Pronta continua necessária para calibrar o cooldown de cada slot.
+O botão Detectar skills aparece no topo e na aba Skills. Ele localiza M2, 1 e 2 e inicia o aprendizado dos ciclos visuais. Um aviso aparece em qualquer aba quando a barra está encoberta.
+
+As abas seguem as tarefas: Jogo 1, Skills, Diálogos, Jogo 2 e Ajustes. Clique, poção e tecla segurada têm suas configurações junto ao botão de ativação. As opções manuais das skills ficam em ajustes avançados.
 
 ## Fundo
 

@@ -25,6 +25,7 @@ type Bridge = {
   panic(): Promise<void>;
   set_auto_slots(enabled: boolean): Promise<boolean>;
   locate_skills(): Promise<boolean>;
+  reset_skill_learning(): Promise<boolean>;
   select_secondary_window(candidate: GameWindow): Promise<boolean>;
   update_secondary(patch: { key?: string; interval?: number }): Promise<boolean>;
   set_secondary_enabled(enabled: boolean): Promise<boolean>;

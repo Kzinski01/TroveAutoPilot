@@ -63,6 +63,7 @@ from routines import (
 from routines import (
     clamp_hold as clamp_hold,
 )
+from skill_learning import SkillMonitor
 from targeted_input import TargetedInput
 
 
@@ -83,6 +84,7 @@ class Bot(AutoclickRoutine, SkillRoutine, PotionRoutine, HeldKeyRoutine, DialogR
         self.status = {}              # rotina -> texto curto para a interface
 
         self._lock = threading.RLock()
+        self.skill_monitor = SkillMonitor(self._lock)
         self.slot_locator = AutoSlots(cfg, self.input, self._lock, self._log)
         self.secondary = PeriodicKey(cfg.setdefault("secondary", copy.deepcopy(SECONDARY_DEFAULTS)),
                                      self.input, self._log, lock=self._lock)

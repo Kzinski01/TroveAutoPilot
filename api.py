@@ -146,6 +146,7 @@ class Api:
             "inputMode": self._cfg.get("input_mode", "foreground"),
             "secondary": self._bot.secondary.state(),
             "autoSlots": self._bot.slot_locator.state(),
+            "skillReadings": self._bot.skill_monitor.state(),
         }
 
     def poll(self):
@@ -165,6 +166,7 @@ class Api:
             "targetReason": self._bot.input.blocked_reason(),
             "secondary": self._bot.secondary.state(),
             "autoSlots": self._bot.slot_locator.state(),
+            "skillReadings": self._bot.skill_monitor.state(),
         }
 
     def _live_ratios(self):
@@ -226,6 +228,7 @@ class Api:
             return False
         self._bot.reload_templates()
         self._bot.slot_locator.invalidate()
+        self._bot.skill_monitor.reset()
         self.save()
         return True
 
@@ -397,6 +400,11 @@ class Api:
         found = self._offscreen(lambda: self._bot.slot_locator.update(force=True))
         self.save()
         return found
+
+    def reset_skill_learning(self):
+        self._bot.skill_monitor.reset()
+        self.log("[Bot][Skills] Aprendizado reiniciado. Use as skills normalmente com a barra visível.")
+        return True
 
     # -------------------------------------------------------------- janelas
     def update_dialog(self, name, patch):

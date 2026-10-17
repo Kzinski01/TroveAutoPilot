@@ -1,6 +1,7 @@
 'use client';
 
 import * as React from 'react';
+import { FeatureControl } from '@/components/feature-control';
 
 import { useBot } from '@/components/bot-provider';
 import { Button } from '@/components/ui/button';
@@ -139,6 +140,12 @@ function DialogCard({
 export function DialogsPage() {
   return (
     <div className="grid gap-4">
+      <Card>
+        <CardHeader className="flex-row flex-wrap items-start justify-between gap-3 space-y-0">
+          <div><CardTitle>Respostas automáticas</CardTitle><CardDescription className="mt-1">Claim e convites do Jogo 1. Exige jogo em foco e ataques ligados.</CardDescription></div>
+          <FeatureControl name="dialogs" label="Ativar diálogos" />
+        </CardHeader>
+      </Card>
       {DIALOGS.map((dialog) => (
         <DialogCard key={dialog.name} {...dialog} />
       ))}

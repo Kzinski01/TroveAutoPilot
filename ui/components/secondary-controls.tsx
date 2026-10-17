@@ -45,7 +45,7 @@ export function SecondaryControls() {
       <CardHeader>
         <CardTitle>Jogo 2 — tecla periódica</CardTitle>
         <CardDescription>
-          Envia uma tecla ao Jogo 2, mesmo com o master desligado. F12 para ambos.
+          Envia uma tecla ao Jogo 2, mesmo com os ataques do Jogo 1 pausados. F12 para ambos.
         </CardDescription>
       </CardHeader>
       <CardContent className="space-y-3">

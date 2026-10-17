@@ -45,6 +45,7 @@ export interface Settings {
 
 /** Estado completo, buscado ao abrir e depois de cada acao. */
 export interface AppState {
+  skillReadings?: Record<string, SkillReading>;
   autoSlots: AutoSlotsState;
   secondary: SecondaryState;
   selectedWindow: GameWindow | null;
@@ -63,6 +64,7 @@ export interface AppState {
 
 /** Dados vivos, buscados a cada tick. */
 export interface Telemetry {
+  skillReadings?: Record<string, SkillReading>;
   autoSlots: AutoSlotsState;
   secondary: SecondaryState;
   targetReason: string | null;
@@ -94,8 +96,18 @@ export interface SecondaryState {
 }
 
 export interface AutoSlotsState {
+  warning?: string | null;
   enabled: boolean;
   status: string;
   confidence: number | null;
   skills: Skill[];
+}
+
+export interface SkillReading {
+  status: 'learning' | 'watching' | 'ready' | 'cooldown' | 'confirming' | 'blocked';
+  message: string;
+  ratio: number | null;
+  calibrated: boolean;
+  ready: boolean;
+  lastCooldown: number | null;
 }

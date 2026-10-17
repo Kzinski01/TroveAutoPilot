@@ -15,8 +15,15 @@ telemetria sem iniciar automação.
    os ataques devem parar. Retorne à janela e confirme a soltura pendente.
 4. Teste Mensagens. Verifique dentro do jogo se os comandos são aceitos:
    mensagem enfileirada no Windows não comprova ação dentro do Trove.
-5. Calibre cada slot pronto, confirme ratios e cooldowns, mova e redimensione
-   a janela. Cubra os ícones e minimize: a leitura deve pausar.
+5. Clique em Detectar skills e use cada skill normalmente, sem capturar Pronta.
+   Confirme que um ciclo visual completo conclui o aprendizado. Comece também
+   com uma skill em cooldown: a imagem escura não pode ser aprendida como pronta.
+   Teste redução de cooldown por outra skill e poção; o retorno deve seguir a
+   imagem atual. Um brilho passageiro não pode disparar um novo comando.
+   Mova e redimensione a janela. Cubra os ícones com o próprio app e com outra
+   janela: a leitura deve pausar e mostrar aviso em qualquer aba. Descubra a
+   barra e confirme a retomada. Minimize, troque de classe e use Reaprender skills.
+   Skills sem mudança visual suficiente devem aguardar, sem disparos de treino.
 6. No Jogo 2, teste E em intervalo conhecido. O primeiro envio ocorre após
    o intervalo; desligar o master do Jogo 1 não desliga essa rotina.
 7. Com uma tecla segurada e o Jogo 2 ativo, use F12 e o botão Parar tudo.

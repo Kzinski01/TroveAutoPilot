@@ -1,49 +1,55 @@
 'use client';
 
 import * as React from 'react';
-import { Monitor, Radio, Link2 } from 'lucide-react';
+import { Monitor, Radio } from 'lucide-react';
 import Link from 'next/link';
 
 import { BotProvider, useBot } from '@/components/bot-provider';
 import { DetectSkillsButton } from '@/components/detect-skills-button';
 import { LogPanel } from '@/components/log-panel';
-import { WindowSelector } from '@/components/window-selector';
+import { SkillVisibilityNotice } from '@/components/skill-visibility-notice';
 import { DialogsPage } from '@/components/pages/dialogs-page';
 import { FunctionsPage } from '@/components/pages/functions-page';
 import { SettingsPage } from '@/components/pages/settings-page';
 import { SkillsPage } from '@/components/pages/skills-page';
+import { SecondaryPage } from '@/components/pages/secondary-page';
 import { NAV, Sidebar, type PageKey } from '@/components/sidebar';
 import { GlassFold } from '@/components/ui/glass-fold';
 
 const HEADERS: Record<PageKey, { title: string; description: string }> = {
-  funcoes: {
-    title: 'Funções',
-    description: 'Ative rotinas e configure atalhos.',
+  jogo1: {
+    title: 'Jogo 1',
+    description: 'Selecione o jogo e configure suas rotinas.',
   },
   skills: {
     title: 'Skills',
-    description: 'Detecte as skills e ajuste o cooldown.',
+    description: 'Aprendizado automático e leitura do cooldown.',
   },
-  janelas: {
-    title: 'Janelas',
+  dialogos: {
+    title: 'Diálogos',
     description: 'Configure Claim e convites.',
+  },
+  jogo2: {
+    title: 'Jogo 2',
+    description: 'Envie uma tecla periódica para outro processo.',
   },
   ajustes: {
     title: 'Ajustes',
-    description: 'Configure cliques, teclas e segurança.',
+    description: 'Atalhos gerais, segurança e diagnóstico.',
   },
 };
 
 const VIEWS: Record<PageKey, React.ComponentType> = {
-  funcoes: FunctionsPage,
+  jogo1: FunctionsPage,
   skills: SkillsPage,
-  janelas: DialogsPage,
+  dialogos: DialogsPage,
+  jogo2: SecondaryPage,
   ajustes: SettingsPage,
 };
 
 function Shell() {
   const [current, setCurrent] = React.useState<PageKey>(NAV[0].key);
-  const { state, telemetry, ready, preview, connected, error } = useBot();
+  const { ready, preview, connected, error } = useBot();
   const View = VIEWS[current];
   const header = HEADERS[current];
 
@@ -69,26 +75,12 @@ function Shell() {
 
         {preview && <p className="preview-banner text-xs">Prévia visual com dados de exemplo. As ações estão desativadas.</p>}
         {error && <p role="status" className="text-sm text-amber-200">{error}</p>}
+        <SkillVisibilityNotice />
 
         <div className="hide-scrollbar min-h-0 flex-1 overflow-y-auto pr-1">
           {ready ? <>
-            <div className="session-strip mb-4 grid grid-cols-2 gap-3" aria-label="Estado dos jogos">
-              <div className="session-target flex items-center gap-3 rounded-lg border px-4 py-3">
-                <Monitor className="size-4 shrink-0 text-primary" /><div className="min-w-0">
-                  <p className="text-xs font-medium">Jogo 1 <span className="ml-1 text-muted-foreground">Ataques</span></p>
-                  <p className="mt-1 truncate text-xs text-muted-foreground">{state?.selectedWindow?.title || 'Aguardando seleção'}</p>
-                </div>
-              </div>
-              <div className="session-target flex items-center gap-3 rounded-lg border px-4 py-3">
-                <Link2 className="size-4 shrink-0 text-primary" /><div className="min-w-0">
-                  <p className="text-xs font-medium">Jogo 2 <span className="ml-1 text-muted-foreground">Tecla periódica</span></p>
-                  <p className="mt-1 truncate text-xs text-muted-foreground">{(telemetry?.secondary ?? state?.secondary)?.selectedWindow?.title || 'Aguardando seleção'}</p>
-                </div>
-              </div>
-            </div>
             <fieldset disabled={preview || !connected} className="min-w-0 space-y-4">
               <legend className="sr-only">Controles de automação</legend>
-              <WindowSelector />
               <View />
             </fieldset>
           </> : <div className="connection-empty rounded-xl border p-8">

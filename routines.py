@@ -125,7 +125,7 @@ class SkillRoutine:
             if not skill.get("region"):
                 continue
             ratio = self._skill_ratio(skill)
-            self.status[skill["id"]] = ((self.input.skill_blocked_reason(skill) or "sem calibracao") if ratio is None
+            self.status[skill["id"]] = ((self._skill_reading_message(skill) or "sem calibracao") if ratio is None
                                         else f"{ratio:.2f}")
 
     def _try_skill(self, skill):
@@ -133,26 +133,41 @@ class SkillRoutine:
         if not skill.get("enabled", True) or not skill.get("region"):
             return False
 
+        automatic = self.cfg.get("auto_slots", {}).get("enabled", False)
         ratio = self._skill_ratio(skill)
         if ratio is None:
-            self.status[skill["id"]] = self.input.skill_blocked_reason(skill) or "sem calibração"
+            self.status[skill["id"]] = self._skill_reading_message(skill) or "sem calibração"
             return False
 
         self.status[skill["id"]] = f"{ratio:.2f}"
-        if ratio < float(skill.get("threshold", 0.80)):
+        if not automatic and ratio < float(skill.get("threshold", 0.80)):
             return False
 
         now = time.time()
         if now < self._next_skill_at.get(skill["id"], 0.0):
             return False
 
-        if self._press(skill.get("key", "")) is False:
-            return False
+        with self._lock:
+            if automatic != self.cfg.get("auto_slots", {}).get("enabled", False):
+                return False
+            if automatic and (self.blocked_reason("skills") is not None
+                              or not self.slot_locator.ready_for(skill)
+                              or not self.skill_monitor.ready(skill, self.input.selected())):
+                return False
+            if automatic and not self.input.skill_region(skill):
+                self.skill_monitor.pause(skill, self.input.skill_blocked_reason(skill))
+                return False
+            if self._press(skill.get("key", "")) is False:
+                return False
+            if automatic:
+                self.skill_monitor.sent(skill)
         self._next_skill_at[skill["id"]] = now + float(skill.get("min_interval", 0.6))
         self._log(f"Skill {skill['name']}: comando enviado (ratio {ratio:.2f}).")
         return True
 
     def _skill_ratio(self, skill):
+        if self.cfg.get("auto_slots", {}).get("enabled", False):
+            return self._adaptive_skill_ratio(skill)
         if not self.slot_locator.ready_for(skill):
             return None
         selected = self.input.selected()
@@ -164,6 +179,36 @@ class SkillRoutine:
                 or self.input.skill_region(skill) != region):
             return None
         return ratio
+
+    def _skill_reading_message(self, skill):
+        if self.cfg.get("auto_slots", {}).get("enabled", False):
+            return self.skill_monitor.message(skill)
+        return self.input.skill_blocked_reason(skill)
+
+    def _adaptive_skill_ratio(self, skill):
+        if self._blocked_by_dialog():
+            self.skill_monitor.pause(skill, "Aguardando o diálogo fechar")
+            return None
+        reason = self.input.blocked_reason()
+        if reason or not self.slot_locator.ready_for(skill):
+            self.skill_monitor.pause(skill, reason or "Aguardando a barra de skills")
+            return None
+        selected, region = self.input.selected(), self.input.skill_region(skill)
+        if not region:
+            self.skill_monitor.pause(skill, self.input.skill_blocked_reason(skill))
+            return None
+        try:
+            frame = vision.grab(region)
+        except (OSError, ValueError) as error:
+            self.skill_monitor.pause(skill, f"Falha na leitura: {error}")
+            return None
+        with self._lock:
+            if (not self.cfg.get("auto_slots", {}).get("enabled", False)
+                    or not self.slot_locator.ready_for(skill) or self.input.selected() != selected
+                    or self.input.skill_region(skill) != region or self.input.blocked_reason()):
+                self.skill_monitor.pause(skill, "Leitura interrompida. Deixe os ícones visíveis.")
+                return None
+            return self.skill_monitor.observe(skill, selected, frame)
 
 
 class PotionRoutine:

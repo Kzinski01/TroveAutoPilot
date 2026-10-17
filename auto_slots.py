@@ -35,6 +35,7 @@ class AutoSlots:
         self._status = "manual"
         self._confidence = None
         self._revision = 0
+        self._warning = None
 
     def set_logger(self, log):
         self._log = log
@@ -53,12 +54,13 @@ class AutoSlots:
             self.invalidate()
             self._set_status("aguardando localização" if enabled else "manual")
 
-    def _set_status(self, status):
+    def _set_status(self, status, warning=None):
         if not self.options["enabled"]:
             status = "manual"
         if status != self._status:
             self._log(f"[Bot][Slots] {status}")
         self._status = status
+        self._warning = warning if self.options["enabled"] else None
 
     def _current(self):
         selected = self.input.selected()
@@ -75,11 +77,19 @@ class AutoSlots:
     def state(self):
         with self._lock:
             return {"enabled": self.options["enabled"], "status": self._status,
+                    "warning": self._warning,
                     "confidence": self._confidence,
                     "skills": [dict(skill) for skill in self.cfg["skills"]]}
 
     def update(self, force=False):
         if not self.options["enabled"]:
+            return False
+        if self._bar_is_covered():
+            with self._lock:
+                self._validated = None
+                self._confidence = None
+                self._set_status("barra encoberta; skills pausadas",
+                                 "Mova a janela que cobre os ícones do Jogo 1. A leitura será retomada automaticamente.")
             return False
         if not force:
             reason = self.input.blocked_reason()
@@ -121,12 +131,14 @@ class AutoSlots:
         detector = self._get_detector()
         match = self._find_match(detector, client, previous)
         if match is None:
-            self._set_status("barra não reconhecida ou ambígua; skills pausadas")
+            self._set_status("barra não reconhecida ou ambígua; skills pausadas",
+                             "Não consigo ler a barra de skills. Deixe os ícones do Jogo 1 visíveis e mova janelas sobre eles.")
             return False
         regions = self._screen_regions(match, client)
         bindings = self._bind_all(regions)
         if not bindings or current != self._current():
-            self._set_status("barra encoberta ou janela alterada; skills pausadas")
+            self._set_status("barra encoberta ou janela alterada; skills pausadas",
+                             "Deixe os ícones do Jogo 1 visíveis. Mova a janela que estiver sobre eles.")
             return False
         # Confirm on a second frame, so a resize/move during capture cannot bind stale pixels.
         if not self._confirm_match(detector, client, match):
@@ -162,6 +174,16 @@ class AutoSlots:
             self._detector = SlotDetector(cv2.imread(path))
         return self._detector
 
+    def _bar_is_covered(self):
+        with self._lock:
+            if self._match is None or self._context is None:
+                return False
+            selected, client = self._context
+            current = self.input.client_region(require_focus=False)
+            if self.input.selected() != selected or not current or tuple(current) != client:
+                return False
+            return self._bind_all(self._screen_regions(self._match, client)) is None
+
     def _bind_all(self, regions):
         bindings = {name: self.input.bind_region(region, require_focus=False)
                     for name, region in regions.items()}
@@ -183,9 +205,9 @@ class AutoSlots:
                 if name not in regions:
                     continue
                 if not skill.get("auto_sampling"):
-                    # Old manual crops have different pixels; never fabricate a ready baseline.
+                    # Manual crops have different pixels; learning must observe a new visual cycle.
                     skill.update(ready_score=0.0, cooldown_score=0.0, auto_sampling=True)
-                    self._log(f"[Bot][Slots] Slot {skill['name']}: capture Pronta uma vez para a nova área.")
+                    self._log(f"[Bot][Slots] Slot {skill['name']}: aprendizado automático iniciado.")
                 skill.update(region=regions[name], window_region=bindings[name])
             self._match = match
             self._validated = current

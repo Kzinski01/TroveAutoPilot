@@ -313,6 +313,50 @@ class AutomaticSlotsTest(unittest.TestCase):
         self.assertFalse(self.cfg["auto_slots"]["enabled"])
         self.grab.assert_not_called()
 
+    def test_covered_icons_raise_warning_and_resume_without_clicking(self):
+        self.locate()
+        self.windows.hit = 100
+        self.assertFalse(self.locator.update())
+        self.assertIn("Mova", self.locator.state()["warning"])
+        self.windows.hit = 200
+        self.assertTrue(self.locator.update(force=True))
+        self.assertIsNone(self.locator.state()["warning"])
+
+    def test_coverage_warning_is_available_even_when_foreground_focus_is_lost(self):
+        self.locate()
+        self.cfg["input_mode"] = "foreground"
+        self.windows.hit = self.windows.focus = 100
+        self.assertFalse(self.locator.update())
+        self.assertIn("Mova", self.locator.state()["warning"])
+
+    def test_automatic_skill_can_fire_after_learning_without_saved_ready_score(self):
+        self.locate()
+        skill = self.cfg["skills"][1]
+        icon = np.random.default_rng(42).integers(55, 230, (32, 32, 3), dtype=np.uint8)
+        now = 10
+        self.engine.master = True
+        with mock.patch.object(self.engine, "_press", return_value=True) as press:
+            for frame in (icon, (icon * 0.2).astype(np.uint8), icon):
+                self.grab.side_effect = lambda region, frame=frame: frame.copy()
+                for _ in range(6):
+                    now += 0.11
+                    with mock.patch("skill_learning.time.monotonic", return_value=now):
+                        self.engine._skill_ratio(skill)
+            with mock.patch("skill_learning.time.monotonic", return_value=now + 0.11):
+                self.assertTrue(self.engine._try_skill(skill))
+            press.assert_called_once_with("1")
+            self.assertEqual(skill["ready_score"], 0)
+            self.assertEqual(self.engine.skill_monitor.state()["s1"]["status"], "confirming")
+
+    def test_covering_icon_during_adaptive_capture_cannot_teach(self):
+        self.locate()
+        def cover(region):
+            self.windows.hit = 100
+            return self.frame
+        self.grab.side_effect = cover
+        self.assertIsNone(self.engine._skill_ratio(self.cfg["skills"][1]))
+        self.assertFalse(self.engine.skill_monitor.state()["s1"]["ready"])
+
 
 if __name__ == "__main__":
     unittest.main()

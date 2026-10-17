@@ -1,6 +1,6 @@
 'use client';
 
-import { Crosshair, Keyboard, Settings2, Wand2, Square, type LucideIcon } from 'lucide-react';
+import { Crosshair, Keyboard, Link2, Settings2, Wand2, Square, type LucideIcon } from 'lucide-react';
 import * as React from 'react';
 
 import { useBot } from '@/components/bot-provider';
@@ -8,12 +8,13 @@ import { Switch } from '@/components/ui/switch';
 import { call } from '@/lib/api';
 import { cn } from '@/lib/utils';
 
-export type PageKey = 'funcoes' | 'skills' | 'janelas' | 'ajustes';
+export type PageKey = 'jogo1' | 'skills' | 'dialogos' | 'jogo2' | 'ajustes';
 
 export const NAV: { key: PageKey; label: string; icon: LucideIcon }[] = [
-  { key: 'funcoes', label: 'Funções', icon: Keyboard },
+  { key: 'jogo1', label: 'Jogo 1', icon: Keyboard },
   { key: 'skills', label: 'Skills', icon: Wand2 },
-  { key: 'janelas', label: 'Janelas', icon: Crosshair },
+  { key: 'dialogos', label: 'Diálogos', icon: Crosshair },
+  { key: 'jogo2', label: 'Jogo 2', icon: Link2 },
   { key: 'ajustes', label: 'Ajustes', icon: Settings2 },
 ];
 
@@ -48,7 +49,7 @@ export function Sidebar({
           )}
           title={focus?.title}
         >
-          {focus?.matched ? 'Jogo em foco' : 'Aguardando foco do jogo'}
+          {focus?.matched ? 'Jogo 1 em foco' : 'Aguardando foco do Jogo 1'}
         </div>
       </div>
 
