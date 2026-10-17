@@ -523,11 +523,14 @@ class Api:
 
     def _diagnose_skills(self):
         medidos = self._live_ratios()
+        readings = self._bot.skill_monitor.state()
         for skill in self._cfg["skills"]:
             ratio = medidos.get(skill["id"])
             medido = "-" if ratio is None else f"{ratio:.2f}"
             self.log(f"  skill {skill['name']}: ratio={medido} "
                      f"limite={skill.get('threshold')} tecla={skill.get('key')!r}")
+            if self._cfg.get("auto_slots", {}).get("enabled"):
+                self.log(f"    {readings.get(skill['id'], {}).get('message', 'Aguardando leitura')}")
 
     def save(self):
         with self._bot._lock, self._lock:

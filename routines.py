@@ -3,6 +3,7 @@
 import time
 
 import vision
+from skill_learning import LEARNING_ATTEMPT_INTERVAL
 
 IDLE_SLEEP = 0.10          # espera quando a rotina esta bloqueada
 BUSY_SLEEP = 0.05          # espera curta dentro de uma rotina ativa
@@ -135,12 +136,9 @@ class SkillRoutine:
 
         automatic = self.cfg.get("auto_slots", {}).get("enabled", False)
         ratio = self._skill_ratio(skill)
-        if ratio is None:
-            self.status[skill["id"]] = self._skill_reading_message(skill) or "sem calibração"
-            return False
-
-        self.status[skill["id"]] = f"{ratio:.2f}"
-        if not automatic and ratio < float(skill.get("threshold", 0.80)):
+        self.status[skill["id"]] = (self._skill_reading_message(skill) or "sem calibração"
+                                    if ratio is None else f"{ratio:.2f}")
+        if not automatic and (ratio is None or ratio < float(skill.get("threshold", 0.80))):
             return False
 
         now = time.time()
@@ -150,19 +148,38 @@ class SkillRoutine:
         with self._lock:
             if automatic != self.cfg.get("auto_slots", {}).get("enabled", False):
                 return False
-            if automatic and (self.blocked_reason("skills") is not None
-                              or not self.slot_locator.ready_for(skill)
-                              or not self.skill_monitor.ready(skill, self.input.selected())):
-                return False
-            if automatic and not self.input.skill_region(skill):
-                self._pause_skill_region(skill)
-                return False
+            if automatic:
+                return self._send_adaptive_skill(skill, now)
             if self._press(skill.get("key", "")) is False:
                 return False
-            if automatic:
-                self.skill_monitor.sent(skill)
         self._next_skill_at[skill["id"]] = now + float(skill.get("min_interval", 0.6))
         self._log(f"Skill {skill['name']}: comando enviado (ratio {ratio:.2f}).")
+        return True
+
+    def _send_adaptive_skill(self, skill, now):
+        if (not skill.get("enabled", True)
+                or self.blocked_reason("skills") is not None or self._blocked_by_dialog()
+                or not self.slot_locator.ready_for(skill)):
+            return False
+        target = self.input.selected()
+        confirmed = self.skill_monitor.ready(skill, target)
+        if not confirmed and not self.skill_monitor.can_attempt(skill, target):
+            return False
+        if not self.input.skill_region(skill):
+            self._pause_skill_region(skill)
+            return False
+        # Rate-limit failures as well: a refused command must not retry every scan.
+        interval = max(LEARNING_ATTEMPT_INTERVAL, float(skill.get("min_interval", 0.6)))
+        self.skill_monitor.defer_attempt(skill)
+        self._next_skill_at[skill["id"]] = now + interval
+        if self._press(skill.get("key", "")) is False:
+            self.status[skill["id"]] = "Envio bloqueado; confira o diagnóstico"
+            return False
+        self.skill_monitor.sent(skill)
+        # Confirmed cooldowns may return sooner; only unconfirmed attempts need 2s.
+        self._next_skill_at[skill["id"]] = now + float(skill.get("min_interval", 0.6))
+        label = "comando enviado" if confirmed else "tentativa enviada"
+        self._log(f"Skill {skill['name']}: {label}; aguardando resposta visual.")
         return True
 
     def _skill_ratio(self, skill):

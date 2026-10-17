@@ -1,13 +1,16 @@
 """Temporal cooldown regressions using generated pixels; no live game input."""
 
 import copy
+from pathlib import Path
 import threading
 import unittest
 from unittest import mock
 
 import numpy as np
+import cv2
 
 from skill_learning import SkillMonitor, VisualCycle
+from slot_detection import SlotDetector
 
 
 ICON = np.random.default_rng(42).integers(55, 230, (32, 32, 3), dtype=np.uint8)
@@ -45,6 +48,53 @@ class VisualCycleTest(unittest.TestCase):
     def test_learning_requires_a_complete_visual_cycle(self):
         self.learn()
         self.assertAlmostEqual(self.feed(ICON), 1.0)
+
+    def test_initial_attempt_does_not_claim_calibration(self):
+        self.feed(ICON)
+        self.assertTrue(self.model.can_attempt(self.now))
+        self.assertFalse(self.model.ready)
+        self.assertFalse(self.model.calibrated)
+
+    def test_unanswered_attempt_waits_two_seconds_and_fresh_stable_samples(self):
+        self.feed(ICON)
+        self.model.sent(self.now)
+        self.feed(ICON, 12)
+        self.assertFalse(self.model.can_attempt(self.now))
+        self.assertIn("Sem resposta visual", self.model.message())
+        self.feed(ICON, 8)
+        self.assertTrue(self.model.can_attempt(self.now))
+        self.assertFalse(self.model.can_attempt(self.now + 1))
+        self.assertFalse(self.model.ready)
+
+    def test_visible_cooldown_blocks_learning_attempts(self):
+        self.feed(ICON)
+        self.model.sent(self.now)
+        self.feed(DARK, 30)
+        self.assertFalse(self.model.can_attempt(self.now))
+
+    def test_real_numeric_overlay_can_teach_without_large_brightness_drop(self):
+        root = Path(__file__).resolve().parents[1]
+        reference = cv2.imread(str(root / "assets/skill-bar-reference.png"))
+        cooldown = cv2.imread(str(root / "tests/fixtures/skill-bar-cooldown.png"))
+        detector = SlotDetector(reference)
+        frames = []
+        for bar in (reference, cooldown):
+            frame = np.zeros((500, 800, 3), dtype=np.uint8)
+            frame[400:400 + bar.shape[0], 100:100 + bar.shape[1]] = bar
+            match = detector.find(frame)
+            self.assertIsNotNone(match)
+            frames.append({name: frame[y:y+h, x:x+w].copy()
+                           for name, (x, y, w, h) in match.regions().items()})
+        for name in ("m2", "s1", "s2"):
+            with self.subTest(skill=name):
+                self.model = VisualCycle()
+                self.feed(frames[0][name])
+                self.model.sent(self.now)
+                self.feed(frames[1][name], 25)
+                self.assertTrue(self.model.low_seen)
+                self.assertFalse(self.model.can_attempt(self.now))
+                self.feed(frames[0][name])
+                self.assertTrue(self.model.ready)
 
     def test_starting_in_cooldown_does_not_learn_dark_as_ready(self):
         self.feed(DARK)
@@ -93,7 +143,7 @@ class VisualCycleTest(unittest.TestCase):
         self.feed((ICON * 0.80).astype(np.uint8), 12)
         self.assertFalse(self.model.ready)
 
-    def test_sent_command_requires_a_visible_response_before_another(self):
+    def test_unanswered_command_cannot_report_ready(self):
         self.learn()
         self.model.sent(self.now)
         self.feed(ICON, 100)
@@ -171,6 +221,14 @@ class SkillMonitorTest(unittest.TestCase):
         self.assertFalse(self.monitor.ready(self.skill, other))
         self.feed(ICON, target=other)
         self.assertFalse(self.monitor.ready(self.skill, other))
+
+    def test_attempt_cannot_reuse_another_window_key_or_binding(self):
+        self.feed(ICON)
+        with mock.patch("skill_learning.time.monotonic", return_value=self.now):
+            self.assertTrue(self.monitor.can_attempt(self.skill, TARGET))
+            self.assertFalse(self.monitor.can_attempt(self.skill, {**TARGET, "pid": 9}))
+            for changes in ({"key": "2"}, {"window_region": {"relative": [1, 0, 32, 32]}}):
+                self.assertFalse(self.monitor.can_attempt({**self.skill, **changes}, TARGET))
 
     def test_changed_binding_or_key_invalidates_a_ready_result(self):
         self.learn()

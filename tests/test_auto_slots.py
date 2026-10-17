@@ -357,6 +357,102 @@ class AutomaticSlotsTest(unittest.TestCase):
         self.assertIsNone(self.engine._skill_ratio(self.cfg["skills"][1]))
         self.assertFalse(self.engine.skill_monitor.state()["s1"]["ready"])
 
+    def prepare_initial_attempt(self):
+        self.grab.side_effect = lambda region: self.frame.copy()
+        self.locate()
+        self.engine.skill_monitor.reset()
+        self.engine._next_skill_at.clear()
+        self.engine.master = True
+        skill = self.cfg["skills"][1]
+        self.icon = np.random.default_rng(42).integers(55, 230, (32, 32, 3), dtype=np.uint8)
+        self.grab.side_effect = lambda region: self.icon.copy()
+        for now in (10, 10.11, 10.22, 10.33):
+            with mock.patch("skill_learning.time.monotonic", return_value=now):
+                self.engine._skill_ratio(skill)
+        return skill
+
+    def test_initial_skill_attempt_is_sent_without_manual_calibration(self):
+        skill = self.prepare_initial_attempt()
+        with mock.patch.object(self.engine, "_press", return_value=True) as press, \
+                mock.patch("skill_learning.time.monotonic", return_value=10.44):
+            self.assertTrue(self.engine._try_skill(skill))
+        press.assert_called_once_with("1")
+        self.assertFalse(self.engine.skill_monitor.state()["s1"]["calibrated"])
+        self.assertIn("tentativa enviada", self.logs[-1])
+
+    def test_all_three_slots_start_with_their_configured_inputs(self):
+        self.prepare_initial_attempt()
+        with mock.patch.object(self.engine, "_press", return_value=True) as press:
+            for skill in self.cfg["skills"]:
+                for now in (11, 11.11, 11.22, 11.33):
+                    with mock.patch("skill_learning.time.monotonic", return_value=now):
+                        self.engine._try_skill(skill)
+            self.assertEqual(press.call_args_list, [mock.call("mouse_right"), mock.call("1"), mock.call("2")])
+
+    def test_confirmed_return_can_send_sooner_than_learning_retry_interval(self):
+        skill = self.prepare_initial_attempt()
+        skill["min_interval"] = 0.6
+        with mock.patch.object(self.engine, "_press", return_value=True) as press:
+            for tick in range(20):
+                now = 10.44 + tick * 0.11
+                frame = self.icon if tick == 0 or tick >= 5 else (self.icon * 0.2).astype(np.uint8)
+                self.grab.side_effect = lambda region, frame=frame: frame.copy()
+                with mock.patch("skill_learning.time.monotonic", return_value=now), \
+                        mock.patch("routines.time.time", return_value=now):
+                    self.engine._try_skill(skill)
+                if press.call_count == 2:
+                    break
+            self.assertEqual(press.call_count, 2)
+            self.assertLess(now - 10.44, 2)
+
+    def test_learning_attempt_keeps_all_activation_and_visibility_guards(self):
+        for blocked in ("master", "feature", "disabled", "dialog", "covered", "target", "stale"):
+            with self.subTest(blocked=blocked):
+                skill = self.prepare_initial_attempt()
+                self.engine.master = blocked != "master"
+                self.engine.features["skills"] = blocked != "feature"
+                skill["enabled"] = blocked != "disabled"
+                self.engine._dialog_block_until = 9999999999 if blocked == "dialog" else 0
+                self.windows.hit = 100 if blocked == "covered" else 200
+                with mock.patch.object(self.engine, "_press") as press, \
+                        mock.patch("skill_learning.time.monotonic", return_value=10.44):
+                    if blocked == "target":
+                        self.sender.select(self.windows.account1)
+                    if blocked == "stale":
+                        self.locator.invalidate()
+                    self.assertFalse(self.engine._try_skill(skill))
+                    press.assert_not_called()
+                self.windows.hit = 200
+                self.sender.select(self.windows.account2)
+                self.engine._dialog_block_until = 0
+                self.engine.features["skills"] = True
+                skill["enabled"] = True
+
+    def test_unconfirmed_and_failed_attempts_do_not_repeat_on_each_scan(self):
+        for accepted in (True, False):
+            with self.subTest(accepted=accepted):
+                skill = self.prepare_initial_attempt()
+                self.engine._next_skill_at.clear()
+                self.engine.skill_monitor.reset()
+                with mock.patch.object(self.engine, "_press", return_value=accepted) as press:
+                    for tick in range(40):
+                        now = 20 + tick * 0.11
+                        with mock.patch("skill_learning.time.monotonic", return_value=now), \
+                                mock.patch("routines.time.time", return_value=now):
+                            self.engine._try_skill(skill)
+                    self.assertEqual(press.call_count, 2)
+
+    def test_configured_pause_longer_than_learning_interval_is_respected(self):
+        skill = self.prepare_initial_attempt()
+        skill["min_interval"] = 10
+        with mock.patch.object(self.engine, "_press", return_value=True) as press:
+            for tick in range(45):
+                now = 30 + tick * 0.11
+                with mock.patch("skill_learning.time.monotonic", return_value=now), \
+                        mock.patch("routines.time.time", return_value=now):
+                    self.engine._try_skill(skill)
+            press.assert_called_once()
+
     def test_unused_strip_below_icons_does_not_block_visible_skills(self):
         self.locate()
         match = self.locator._match

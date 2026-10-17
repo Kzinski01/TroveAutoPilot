@@ -27,8 +27,8 @@ Requer Windows 10/11 de 64 bits e Microsoft Edge WebView2 Runtime.
 
 1. Baixe o ZIP da release e extraia a pasta inteira. Mantenha `_internal` e `TroveAutoBot.exe.config` ao lado de `TroveAutoBot.exe`.
 2. Abra o aplicativo e o Trove. Selecione a janela em **Jogo 1**.
-3. Com a barra de skills visível, clique em **Detectar skills**, no topo. Use as skills normalmente enquanto o app observa um ciclo completo e aprende o estado pronto.
-4. Ative as rotinas desejadas e pressione **F5** com o jogo em foco.
+3. Com a barra de skills visível, clique em **Detectar skills**, no topo.
+4. Ative as rotinas desejadas e pressione **F5** com o jogo em foco. As skills começam com tentativas espaçadas para aprender o cooldown automaticamente.
 5. Para usar o **Jogo 2**, abra sua aba, selecione outro processo, ajuste tecla e intervalo e ligue seu controle. Ele funciona com os ataques do Jogo 1 pausados.
 
 ![Fluxo de detecção das skills](docs/assets/detect-skills.gif)
@@ -41,7 +41,7 @@ Para Claim e convites, capture um trecho com texto ou ícone na aba **Diálogos*
 
 - **Compatibilidade** pausa ao perder o foco. O modo **Mensagens** é experimental: a aceitação pelo Windows não garante que o Trove execute a ação.
 - A leitura das skills exige ícones visíveis. Janelas cobertas ou minimizadas pausam essa leitura.
-- O aprendizado é feito a cada sessão e acompanha o retorno visual, inclusive quando o cooldown é reduzido. Skills sem mudança visual suficiente permanecem aguardando. Há um modo manual nas opções avançadas. [Como funciona](docs/SKILLS_AUTOMATICAS.md).
+- O aprendizado é feito a cada sessão e acompanha o retorno visual, inclusive quando o cooldown é reduzido. Sem resposta visual, as tentativas têm pelo menos 2s de intervalo e o app avisa. Há um modo manual nas opções avançadas. [Como funciona](docs/SKILLS_AUTOMATICAS.md).
 - **Segurar tecla** e **Jogo 2** têm controles próprios. Use **F12** para desligar todas as rotinas.
 - Em Compatibilidade, uma soltura de tecla ou botão pode aguardar o retorno do foco. Se fechar o aplicativo antes disso, pressione e solte fisicamente a tecla ou botão.
 

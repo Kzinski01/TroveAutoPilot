@@ -26,7 +26,7 @@ function SkillCard({ skill, reading, automatic }: { skill: Skill; reading?: Skil
     </CardHeader>
     <CardContent className="space-y-4">
       <p role="status" className={`text-sm ${reading?.ready ? 'text-success' : 'text-muted-foreground'}`}>
-        {!skill.region ? 'Aguardando localização do ícone' : automatic ? reading?.message ?? 'Aprendendo: use a skill normalmente no jogo' : skill.ready_score ? 'Calibração manual' : 'Calibração manual pendente'}
+        {!skill.region ? 'Aguardando localização do ícone' : automatic ? reading?.message ?? 'Preparando o aprendizado automático' : skill.ready_score ? 'Calibração manual' : 'Calibração manual pendente'}
       </p>
       {automatic && reading?.lastCooldown != null && <p className="text-xs text-muted-foreground">Último retorno observado: {reading.lastCooldown.toFixed(1)}s. A próxima leitura depende do ícone.</p>}
       <label className="flex items-center gap-3 text-xs">Tecla da skill
@@ -81,9 +81,9 @@ export function SkillsPage() {
           </label>
           {automatic?.enabled && <Button size="sm" variant="outline" disabled={busy} onClick={() => run(() => call('reset_skill_learning'))}>Reaprender skills</Button>}
         </div>
-        <p className="text-sm leading-6">{automatic?.enabled ? 'Use as skills normalmente com a barra visível. O app aprende ao observar um ciclo completo, sem capturas manuais.' : 'Clique em Detectar skills para localizar os ícones e iniciar o aprendizado automático.'}</p>
+        <p className="text-sm leading-6">{automatic?.enabled ? 'Ative Skills e ligue os ataques com F5. Com a barra visível, o app inicia usos espaçados e aprende o cooldown pela imagem.' : 'Clique em Detectar skills para localizar os ícones e iniciar o aprendizado automático.'}</p>
         <p className="text-xs text-muted-foreground" aria-live="polite">{automatic?.status ?? 'Aguardando conexão'}</p>
-        <p className="text-xs leading-5 text-muted-foreground">A leitura acompanha reduções de cooldown. Um brilho isolado não libera a skill. Se não houver mudança visual suficiente, ela continua aguardando; o modo manual fica nos ajustes avançados de cada skill.</p>
+        <p className="text-xs leading-5 text-muted-foreground">Até confirmar o cooldown, as tentativas têm pelo menos 2s de intervalo. Se o ícone não responder, confira o modo de envio em Ajustes. Após aprender, o app acompanha o retorno visual e reduções de cooldown.</p>
       </CardContent>
     </Card>
     {(automatic?.skills ?? state?.skills ?? []).map(skill => <SkillCard key={skill.id} skill={skill} reading={readings?.[skill.id]} automatic={automatic?.enabled ?? false} />)}
